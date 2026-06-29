@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Portal — StudyConsole</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --blue: #0969da;
+      --blue-light: rgba(9,105,218,0.08);
+      --blue-mid: rgba(9,105,218,0.15);
+      --green: #1a7f37;
+      --green-light: rgba(26,127,55,0.08);
+      --red: #cf222e;
+      --red-light: rgba(207,34,46,0.08);
+      --amber: #9a6700;
+      --amber-light: rgba(154,103,0,0.08);
+      --bg: #f3f5f8;
+      --card-bg: #ffffff;
+      --border: #d0d7de;
+      --border-soft: #e8edf2;
+      --text: #1f2328;
+      --text-muted: #656d76;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --accent: #0969da;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --border-soft: #21262d;
+      --text: #e6edf3;
+      --text-muted: #7d8590;
+      --blue-light: rgba(56,139,253,0.12);
+      --blue-mid: rgba(56,139,253,0.2);
+      --green-light: rgba(63,185,80,0.12);
+      --red-light: rgba(248,81,73,0.12);
+      --amber-light: rgba(210,153,34,0.12);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      height: 50px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-sm);
+    }
+    .topbar-brand {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--blue) 0%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .topbar-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      background: var(--blue-light);
+      color: var(--blue);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .topbar-student-name { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    .btn-logout {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 12px; font-size: 12px; font-weight: 600;
+      color: var(--red); background: transparent;
+      border: 1px solid var(--border); border-radius: 6px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-logout:hover { background: var(--red-light); border-color: var(--red); }
+    .btn-theme {
+      display: flex; align-items: center; padding: 5px 9px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer; color: var(--text); transition: background 0.15s;
+    }
+    .btn-theme:hover { background: var(--border-soft); }
+
+    /* ── Layout ── */
+    .portal-body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 22px 20px 60px;
+    }
+
+    /* ── Tab nav ── */
+    .tab-nav {
+      display: flex;
+      gap: 2px;
+      background: var(--border-soft);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex: 1; min-width: 80px;
+      padding: 7px 12px; font-size: 12px; font-weight: 600;
+      background: none; border: none; color: var(--text-muted);
+      border-radius: 7px; cursor: pointer;
+      transition: all 0.18s ease; white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: var(--card-bg);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .card-header {
+      padding: 11px 18px;
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin: 0;
+    }
+    .card-body { padding: 0; }
+
+    /* ── Section header (within card) ── */
+    .section-header {
+      padding: 9px 18px 8px;
+      border-bottom: 1px solid var(--border-soft);
+      background: var(--blue-light);
+    }
+    .section-header-title {
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--blue);
+      margin: 0;
+    }
+
+    /* ── Info row grid ── */
+    .info-rows {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .info-rows:last-child { border-bottom: none; }
+    .info-cell {
+      padding: 9px 18px;
+      border-right: 1px solid var(--border-soft);
+      min-width: 0;
+    }
+    .info-cell:last-child { border-right: none; }
+    .info-cell.span2 { grid-column: span 2; }
+    .info-cell.span3 { grid-column: span 3; }
+    .info-label {
+      display: block;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .info-value {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .info-value.wrap { white-space: normal; }
+
+    /* ── Seat strip ── */
+    .seat-strip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .seat-strip:last-child { border-bottom: none; }
+    .seat-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 68px;
+      padding: 5px 14px;
+      background: var(--blue-light);
+      color: var(--blue);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      flex-shrink: 0;
+    }
+    .seat-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .seat-meta strong { color: var(--text); font-weight: 600; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+    .badge-green { background: var(--green-light); color: var(--green); }
+    .badge-red   { background: var(--red-light);   color: var(--red); }
+    .badge-amber { background: var(--amber-light);  color: var(--amber); }
+    .badge-gray  { background: var(--border-soft);  color: var(--text-muted); }
+    .badge-blue  { background: var(--blue-light);   color: var(--blue); }
+
+    /* ── Table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    .data-table th {
+      padding: 8px 14px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-soft);
+      background: var(--bg);
+    }
+    .data-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-soft);
+      color: var(--text);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--bg); }
+
+    /* ── Timeline ── */
+    .timeline { display: flex; flex-direction: column; }
+    .timeline-item {
+      display: flex;
+      gap: 12px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .timeline-item:last-child { border-bottom: none; }
+    .timeline-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--blue);
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .timeline-msg { font-size: 12.5px; color: var(--text); margin: 0 0 2px; }
+    .timeline-ts  { font-size: 11px; color: var(--text-muted); }
+
+    /* ── Form ── */
+    .form-body { padding: 16px 18px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px 11px;
+      font-size: 13px;
+      font-family: var(--font);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(9,105,218,0.1);
+    }
+    .form-group textarea { resize: vertical; min-height: 72px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 15px; font-size: 12.5px; font-weight: 600;
+      border-radius: 7px; border: 1px solid var(--border);
+      background: var(--card-bg); color: var(--text);
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+    }
+    .btn:hover { background: var(--bg); }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--blue); color: white; border-color: transparent; }
+    .btn-primary:hover { opacity: 0.9; background: var(--blue); }
+
+    /* ── Info / warn boxes ── */
+    .info-box {
+      background: var(--blue-light);
+      border: 1px solid rgba(9,105,218,0.15);
+      color: var(--blue);
+      border-radius: 7px;
+      padding: 9px 13px;
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+    .warn-box {
+      background: var(--amber-light);
+      border: 1px solid rgba(154,103,0,0.15);
+      color: var(--amber);
+      border-radius: 8px;
+      padding: 11px 15px;
+      font-size: 12.5px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Education sub-card ── */
+    .edu-block {
+      background: var(--bg);
+      border: 1px solid var(--border-soft);
+      border-radius: 7px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .edu-block-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 8px;
+    }
+
+    /* ── Toast ── */
+    .toast-wrap {
+      position: fixed; bottom: 22px; right: 22px;
+      z-index: 9999; display: flex; flex-direction: column; gap: 7px;
+    }
+    .toast {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--blue);
+      border-radius: 7px;
+      padding: 9px 15px;
+      font-size: 12.5px;
+      box-shadow: var(--shadow-md);
+      transform: translateY(10px); opacity: 0;
+      transition: all 0.25s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9000;
+    }
+    .modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px;
+      width: 90%; max-width: 400px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--text-muted);
+      font-size: 12.5px;
+    }
+
+    @media (max-width: 600px) {
+      .info-rows { grid-template-columns: 1fr 1fr; }
+      .info-cell.span2, .info-cell.span3 { grid-column: span 2; }
+      .form-row, .form-row-3 { grid-template-columns: 1fr; }
+      .portal-body { padding: 14px 12px 50px; }
+    }
+  </style>
+  <style>
+    /* ── Student Receipt Modal — theme-immune, always white card ── */
+    #studentReceiptModalOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 12, 16, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #studentReceiptModalOverlay.open {
+      display: flex;
+    }
+    #studentReceiptCard {
+      background: #ffffff;
+      color: #111827;
+      border-radius: 12px;
+      max-width: 420px;
+      width: calc(100% - 32px);
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.32);
+    }
+    .sr-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px 10px;
+      border-bottom: 2px dashed #e5e7eb;
+    }
+    .sr-institute { font-size: 15px; font-weight: 700; color: #111827; letter-spacing: -0.02em; }
+    .sr-subtitle  { font-size: 9.5px; font-family: var(--font-mono, monospace); text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; margin-top: 1px; }
+    .sr-badge     { font-size: 10px; font-family: var(--font-mono, monospace); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 4px; padding: 3px 7px; }
+    .sr-body      { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .sr-grid      { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; }
+    .sr-lbl       { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 2px; font-family: var(--font-mono, monospace); }
+    .sr-val       { font-size: 12.5px; font-weight: 600; color: #111827; }
+    .sr-val.mono  { font-family: var(--font-mono, monospace); }
+    .sr-fees      { display: flex; flex-direction: column; gap: 3px; font-family: var(--font-mono, monospace); font-size: 12px; color: #111827; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; }
+    .sr-fee-row   { display: flex; justify-content: space-between; }
+    .sr-divider   { border-top: 1px solid #e5e7eb; margin: 4px 0; }
+    .sr-total     { display: flex; justify-content: space-between; font-weight: 700; }
+    .sr-collected { display: flex; justify-content: space-between; font-weight: 600; color: #16a34a; }
+    .sr-balance   { display: flex; justify-content: space-between; font-weight: 700; }
+    .sr-note      { font-size: 11px; color: #6b7280; font-style: italic; border-top: 1px dashed #e5e7eb; padding-top: 6px; margin-top: 4px; line-height: 1.3; }
+    .sr-txns      { font-family: var(--font-mono, monospace); font-size: 11px; color: #374151; display: flex; flex-direction: column; gap: 3px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; }
+    .sr-footer    { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .sr-status    { font-family: var(--font-mono, monospace); font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+    .sr-btn-close { padding: 5px 14px; font-size: 12px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; color: #374151; font-weight: 500; }
+    .sr-btn-print { padding: 5px 14px; font-size: 12px; background: #2563eb; border: none; border-radius: 6px; cursor: pointer; color: #fff; font-weight: 500; }
+    .sr-btn-close:hover { background: #e5e7eb; }
+    .sr-btn-print:hover { background: #1d4ed8; }
+    @media print {
+      body > *:not(#studentReceiptModalOverlay) { display: none !important; }
+      #studentReceiptModalOverlay { position: static !important; background: none !important; backdrop-filter: none !important; display: block !important; }
+      #studentReceiptCard { box-shadow: none !important; border: none !important; max-width: 100% !important; }
+      .sr-btn-close, .sr-btn-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <span class="topbar-brand">StudyConsole</span>
+  <span class="topbar-badge">Student Portal</span>
+  <div class="topbar-right">
+    <span class="topbar-student-name" id="topbarName"></span>
+    <button class="btn-theme" id="themeBtn" title="Toggle theme">
+      <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+    <button class="btn-logout" id="logoutBtn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </button>
+  </div>
+</div>
+
+<div class="portal-body">
+
+  <!-- Temp password warning -->
+  <div id="pwdResetBanner" class="warn-box" style="display:none;">
+    <span>&#9888; <strong>You are using a temporary password.</strong> Please change it to secure your account.</span>
+    <button class="btn" onclick="openPwdModal()" style="padding:4px 12px; font-size:11px; margin-left:auto;">Change Now</button>
+  </div>
+
+  <!-- Tab nav -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tab-overview"  onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn"        id="tab-billing"   onclick="switchTab('billing')">Billing</button>
+    <button class="tab-btn"        id="tab-activity"  onclick="switchTab('activity')">Activity</button>
+    <button class="tab-btn"        id="tab-requests"  onclick="switchTab('requests')">Requests</button>
+    <button class="tab-btn"        id="tab-settings"  onclick="switchTab('settings')">Settings</button>
+  </div>
+
+  <!-- ── OVERVIEW ── -->
+  <div class="tab-panel active" id="panel-overview">
+
+    <!-- Identity card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Student Profile</span>
+        <span id="statusBadge" class="badge badge-gray">Loading</span>
+      </div>
+      <div class="card-body" id="profileArea">
+        <div class="empty-state">Loading&hellip;</div>
+      </div>
+    </div>
+
+    <!-- Seat(s) -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Seat Allocation</span></div>
+      <div class="card-body" id="seatsArea">
+        <div class="empty-state">Loading&hellip;</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── BILLING ── -->
+  <div class="tab-panel" id="panel-billing">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Billing History</span></div>
+
+      <!-- Transition mode: no billing yet -->
+      <div id="billingTransitionNotice" style="display:none; padding:24px; text-align:center; color:var(--text-muted); font-size:13.5px; line-height:1.6;">
+        <div style="font-size:28px; margin-bottom:8px;">🛠️</div>
+        <strong style="color:var(--text);">System Setup in Progress</strong><br>
+        Billing will be activated once the system goes live. No charges apply during this period.
+      </div>
+
+      <!-- Normal mode: billing table -->
+      <div id="billingTableWrapper" style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Month</th><th>Admission Fee</th><th>Amount</th><th>Paid</th><th>Due</th><th>Status</th><th>Paid On</th></tr>
+          </thead>
+          <tbody id="billingBody">
+            <tr><td colspan="6" class="empty-state">Loading&hellip;</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RECEIPT MODAL (theme-immune white card) ── -->
+  <div id="studentReceiptModalOverlay" role="dialog" aria-modal="true">
+    <div id="studentReceiptCard">
+
+      <div class="sr-header">
+        <div>
+          <div class="sr-institute" id="sReceiptInstituteName">StudySpace</div>
+          <div class="sr-subtitle">Official Payment Receipt</div>
+        </div>
+        <div class="sr-badge">RECEIPT</div>
+      </div>
+
+      <div class="sr-body">
+        <div class="sr-grid">
+          <div><div class="sr-lbl">Student</div><div class="sr-val" id="sReceiptStudentName">—</div></div>
+          <div><div class="sr-lbl">Bill No</div><div class="sr-val mono" id="sReceiptBillNo">—</div></div>
+          <div><div class="sr-lbl">S/O · D/O</div><div class="sr-val" id="sReceiptFatherName">—</div></div>
+          <div><div class="sr-lbl">Month</div><div class="sr-val mono" id="sReceiptBillingMonth">—</div></div>
+          <div><div class="sr-lbl">Phone</div><div class="sr-val mono" id="sReceiptStudentPhone">—</div></div>
+          <div><div class="sr-lbl">Date</div><div class="sr-val mono" id="sReceiptPaymentDate">—</div></div>
+          <div><div class="sr-lbl">Student ID</div><div class="sr-val mono" id="sReceiptStudentId">—</div></div>
+          <div><div class="sr-lbl">Mode</div><div class="sr-val mono" id="sReceiptPaymentMode">—</div></div>
+        </div>
+
+        <div class="sr-fees">
+          <div class="sr-fee-row"><span>Monthly Fee</span><span id="sReceiptBaseFee">₹0</span></div>
+          <div class="sr-fee-row" id="sReceiptAdmissionRow" style="display:none;"><span>Admission Fee</span><span id="sReceiptAdmissionFee">₹0</span></div>
+          <div class="sr-fee-row" id="sReceiptFineRow" style="display:none;"><span>Late Fine</span><span id="sReceiptFineAmount">₹0</span></div>
+          <div class="sr-divider"></div>
+          <div class="sr-total"><span>Total Expected</span><span id="sReceiptTotalExpected">₹0</span></div>
+          <div class="sr-collected"><span>Collected</span><span id="sReceiptTotalPaid">₹0</span></div>
+          <div class="sr-balance" id="sReceiptBalanceRow"><span>Balance Due</span><span id="sReceiptRemainingDue">₹0</span></div>
+          <div id="sReceiptNoteRow" style="display:none;" class="sr-note"><span id="sReceiptNote"></span></div>
+        </div>
+
+        <div id="sReceiptTransactionsBlock" style="display:none;">
+          <div id="sReceiptTransactionsList" class="sr-txns"></div>
+        </div>
+
+        <div class="sr-footer">
+          <div id="sReceiptStatusSummary" class="sr-status"></div>
+          <div style="display:flex; gap:8px;">
+            <button class="sr-btn-close" onclick="closeStudentReceipt()">Close</button>
+            <button class="sr-btn-print" onclick="downloadStudentReceipt()">Download</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── ACTIVITY ── -->
+  <div class="tab-panel" id="panel-activity">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Activity Log</span></div>
+      <div class="card-body" id="activityLog">
+        <div class="empty-state">Loading&hellip;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REQUESTS ── -->
+  <div class="tab-panel" id="panel-requests">
+
+    <!-- Seat change -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Request Seat Change</span></div>
+      <div class="form-body">
+        <div class="info-box">Any existing pending request is replaced when you submit a new one.</div>
+        <form id="seatRequestForm" onsubmit="submitSeatRequest(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reqSeat">Preferred Seat No. *</label>
+              <input type="text" id="reqSeat" placeholder="e.g. A-12" required />
+            </div>
+            <div class="form-group">
+              <label for="reqReason">Reason *</label>
+              <input type="text" id="reqReason" placeholder="Reason for change" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reqStart">Preferred Start Time *</label>
+              <input type="time" id="reqStart" required />
+            </div>
+            <div class="form-group">
+              <label for="reqEnd">Preferred End Time *</label>
+              <input type="time" id="reqEnd" required />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="seatReqBtn">Submit Request</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Profile update -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Request Profile Update</span></div>
+      <div class="form-body">
+        <div class="info-box">Changes require admin approval before being applied.</div>
+        <form id="profileEditForm" onsubmit="submitProfileEdit(event)">
+
+          <!-- Personal -->
+          <div class="section-header" style="margin: 0 -18px 14px; padding-left:18px;">
+            <p class="section-header-title">Personal Information</p>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="peFormNumber">Form Number</label>
+              <input type="text" id="peFormNumber" placeholder="Form No." />
+            </div>
+            <div class="form-group">
+              <label for="peName">Full Name *</label>
+              <input type="text" id="peName" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="peGender">Gender *</label>
+              <select id="peGender" required>
+                <option value="">Select&hellip;</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="peDob">Date of Birth *</label>
+              <input type="date" id="peDob" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="peAadhaar">Aadhaar Number</label>
+              <input type="text" id="peAadhaar" placeholder="12-digit" />
+            </div>
+            <div class="form-group">
+              <label for="peGoal">Target Goal / Exam</label>
+              <input type="text" id="peGoal" placeholder="e.g. UPSC, JEE" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="peNationality">Nationality</label>
+              <input type="text" id="peNationality" value="Indian" />
+            </div>
+            <div class="form-group">
+              <label for="peReligion">Religion</label>
+              <input type="text" id="peReligion" />
+            </div>
+          </div>
+
+          <!-- Photo Upload -->
+          <div class="form-group" style="display:flex; align-items:center; gap:16px; background:var(--bg); padding:12px; border-radius:8px; border:1px solid var(--border-soft);">
+            <div id="pePhotoPreviewContainer" style="width:64px; height:64px; border-radius:50%; border:2px solid var(--border); background:var(--card-bg); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;">
+              <span id="pePhotoPreviewPlaceholder" style="font-size:24px; color:var(--text-faint);">&#128100;</span>
+              <img id="pePhotoPreviewImg" style="width:100%; height:100%; object-fit:cover; display:none;">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px; flex-grow:1;">
+              <span style="font-size:11.5px; font-weight:600; color:var(--text);">Profile Photo</span>
+              <span style="font-size:10px; color:var(--text-faint);">Upload a new photo to replace your current one (subject to admin approval).</span>
+            </div>
+            <button type="button" class="btn btn-secondary" id="pePhotoUploadBtn" style="padding:6px 12px; font-size:12px;">Upload</button>
+            <button type="button" class="btn btn-danger" id="pePhotoRemoveBtn" style="padding:6px 12px; font-size:12px; display:none;">Remove</button>
+            <input type="file" id="pePhotoFile" accept="image/*" style="display:none;">
+            <input type="hidden" id="pePhotoData">
+          </div>
+
+          <!-- Contact -->
+          <div class="section-header" style="margin: 6px -18px 14px; padding-left:18px;">
+            <p class="section-header-title">Contact &amp; Family</p>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pePhone">Phone *</label>
+              <input type="tel" id="pePhone" required />
+            </div>
+            <div class="form-group">
+              <label for="peWhatsapp">WhatsApp</label>
+              <input type="tel" id="peWhatsapp" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="peEmail">Email</label>
+              <input type="email" id="peEmail" />
+            </div>
+            <div class="form-group">
+              <label for="peEmergency">Emergency Contact</label>
+              <input type="tel" id="peEmergency" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="peFather">Father's Name</label>
+              <input type="text" id="peFather" />
+            </div>
+            <div class="form-group">
+              <label for="peMother">Mother's Name</label>
+              <input type="text" id="peMother" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="peParentOccupation">Parent Occupation</label>
+            <input type="text" id="peParentOccupation" />
+          </div>
+
+          <!-- Address -->
+          <div class="section-header" style="margin: 6px -18px 14px; padding-left:18px;">
+            <p class="section-header-title">Residential Address</p>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="peVillage">Village / Area</label>
+              <input type="text" id="peVillage" />
+            </div>
+            <div class="form-group">
+              <label for="pePo">Post Office</label>
+              <input type="text" id="pePo" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pePs">Police Station</label>
+              <input type="text" id="pePs" />
+            </div>
+            <div class="form-group">
+              <label for="peDistrict">District</label>
+              <input type="text" id="peDistrict" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="peState">State</label>
+              <input type="text" id="peState" />
+            </div>
+            <div class="form-group">
+              <label for="pePin">PIN Code</label>
+              <input type="text" id="pePin" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="peAddress">Combined Address *</label>
+            <textarea id="peAddress" required></textarea>
+          </div>
+
+          <!-- Academic -->
+          <div class="section-header" style="margin: 6px -18px 14px; padding-left:18px;">
+            <p class="section-header-title">Academic Details</p>
+          </div>
+          <div class="form-group">
+            <label for="peClass">Current Class / Course</label>
+            <input type="text" id="peClass" placeholder="e.g. B.Sc, 12th, Graduate" />
+          </div>
+          <div class="edu-block">
+            <p class="edu-block-title">Matriculation (10th)</p>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:8px;">
+                <input type="text" id="peMatricBoard" placeholder="Board / University" />
+              </div>
+              <div class="form-group" style="margin-bottom:8px;">
+                <input type="number" id="peMatricYear" placeholder="Year" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <input type="text" id="peMatricMarks" placeholder="Marks (e.g. 420/500)" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <input type="number" step="0.01" id="peMatricPercent" placeholder="Percentage %" />
+              </div>
+            </div>
+          </div>
+          <div class="edu-block" style="margin-bottom:14px;">
+            <p class="edu-block-title">Intermediate (12th)</p>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:8px;">
+                <input type="text" id="peInterBoard" placeholder="Board / University" />
+              </div>
+              <div class="form-group" style="margin-bottom:8px;">
+                <input type="number" id="peInterYear" placeholder="Year" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <input type="text" id="peInterMarks" placeholder="Marks (e.g. 390/500)" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <input type="number" step="0.01" id="peInterPercent" placeholder="Percentage %" />
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="profileEditBtn">Submit Profile Update</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS ── -->
+  <div class="tab-panel" id="panel-settings">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Change Password</span></div>
+      <div class="form-body" style="max-width:380px;">
+        <form id="changePwdForm" onsubmit="changePassword(event)">
+          <div class="form-group">
+            <label for="oldPwd">Current Password</label>
+            <input type="password" id="oldPwd" required autocomplete="current-password" />
+          </div>
+          <div class="form-group">
+            <label for="newPwd">New Password</label>
+            <input type="password" id="newPwd" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" />
+          </div>
+          <div class="form-group">
+            <label for="confirmPwd">Confirm New Password</label>
+            <input type="password" id="confirmPwd" required autocomplete="new-password" />
+          </div>
+          <div id="pwdError" style="background:var(--red-light);border:1px solid rgba(207,34,46,0.15);color:var(--red);border-radius:7px;padding:9px 12px;font-size:12px;margin-bottom:12px;display:none;"></div>
+          <button type="submit" class="btn btn-primary" id="changePwdBtn">Update Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Forced pwd modal -->
+<div class="modal-overlay" id="pwdModal" style="display:none;">
+  <div class="modal-card">
+    <h3 style="margin:0 0 5px; font-size:16px; font-weight:700;">Set New Password</h3>
+    <p style="margin:0 0 18px; font-size:12.5px; color:var(--text-muted);">Create a permanent password to secure your account.</p>
+    <div class="form-group">
+      <label for="modalOldPwd">Current (Temporary) Password</label>
+      <input type="password" id="modalOldPwd" />
+    </div>
+    <div class="form-group">
+      <label for="modalNewPwd">New Password (min 8 chars)</label>
+      <input type="password" id="modalNewPwd" minlength="8" />
+    </div>
+    <div class="form-group">
+      <label for="modalConfirmPwd">Confirm New Password</label>
+      <input type="password" id="modalConfirmPwd" />
+    </div>
+    <div id="modalPwdError" style="background:var(--red-light);border:1px solid rgba(207,34,46,0.15);color:var(--red);border-radius:7px;padding:9px 12px;font-size:12px;margin-bottom:12px;display:none;"></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button class="btn btn-primary" id="modalSaveBtn" onclick="submitModalPwd()">Save Password</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Theme ────────────────────────────────────────────────
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  const themeBtn = document.getElementById('themeBtn');
+  const sunIcon  = themeBtn.querySelector('.sun-icon');
+  const moonIcon = themeBtn.querySelector('.moon-icon');
+  function applyThemeIcons(t) {
+    sunIcon.style.display  = t === 'dark' ? 'block' : 'none';
+    moonIcon.style.display = t === 'dark' ? 'none'  : 'block';
+  }
+  applyThemeIcons(savedTheme);
+  themeBtn.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    applyThemeIcons(next);
+  });
+
+  // ── Logout ───────────────────────────────────────────────
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try { await fetch('/api/student/logout', { method: 'POST' }); } finally {
+      sessionStorage.clear();
+      window.location.href = '/login.html';
+    }
+  });
+
+  // ── Tab switching ────────────────────────────────────────
+  function switchTab(key) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + key).classList.add('active');
+    document.getElementById('panel-' + key).classList.add('active');
+  }
+
+  // ── API helper ───────────────────────────────────────────
+  async function api(path, opts) {
+    opts = opts || {};
+    const res = await fetch('/api' + path, Object.assign({ headers: { 'Content-Type': 'application/json' }, cache: 'no-store' }, opts));
+    if (res.status === 401) { sessionStorage.clear(); window.location.href = '/login.html'; return null; }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  }
+
+  // ── Toast ────────────────────────────────────────────────
+  function toast(msg, isError) {
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast';
+    if (isError) el.style.borderLeftColor = 'var(--red)';
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(() => el.classList.add('show'), 10);
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); }, 3500);
+  }
+
+  // ── Helpers ──────────────────────────────────────────────
+  function fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function fmtMonth(ym) {
+    if (!ym) return '—';
+    const p = ym.split('-');
+    return new Date(Number(p[0]), Number(p[1]) - 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  }
+  function statusBadgeClass(s) {
+    return ({ Active: 'badge-green', Overdue: 'badge-red', Suspended: 'badge-amber', Archived: 'badge-gray' })[s] || 'badge-gray';
+  }
+  function cell(label, value, cls) {
+    return `<div class="info-cell${cls ? ' ' + cls : ''}"><span class="info-label">${label}</span><span class="info-value">${value || '—'}</span></div>`;
+  }
+
+  // ── Load portal ──────────────────────────────────────────
+  let _portalData = null; // cache for receipt modal use
+
+  async function loadPortal() {
+    try {
+      const d = await api('/student/me');
+      if (!d) return;
+      _portalData = d; // cache it
+      const s = d.student;
+
+      document.getElementById('topbarName').textContent = s.name;
+      const sb = document.getElementById('statusBadge');
+      sb.textContent = s.status;
+      sb.className = 'badge ' + statusBadgeClass(s.status);
+
+      // Parse education
+      let edu = [];
+      try { edu = JSON.parse(s.education_history || '[]'); } catch(e) {}
+      const getEdu = lvl => edu.find(e => e.level === lvl) || {};
+      const matric = getEdu('Matric');
+      const inter  = getEdu('Intermediate');
+      function eduText(e) {
+        if (!e.board && !e.year) return '—';
+        return [e.board, e.year, e.marks, e.percent ? e.percent + '%' : ''].filter(Boolean).join(' · ');
+      }
+
+      // Build profile rows
+      document.getElementById('profileArea').innerHTML = `
+        <!-- Personal -->
+        <div class="section-header"><p class="section-header-title">Personal Information</p></div>
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px;">
+          <div style="width:64px; height:64px; border-radius:50%; border:2px solid var(--border); background:var(--card-bg); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;">
+            ${s.photo_data ? `<img src="${s.photo_data}" style="width:100%; height:100%; object-fit:cover;">` : `<span style="font-size:24px; color:var(--text-faint);">&#128100;</span>`}
+          </div>
+          <span style="font-size:11.5px; color:var(--text-muted);">${s.photo_data ? 'Photo on file' : 'No photo on file — submit a Profile Update request below to add one.'}</span>
+        </div>
+        <div class="info-rows">
+          ${cell('Student ID', 'STC-' + String(s.student_id).padStart(4,'0'))}
+          ${cell('Form Number', s.form_number)}
+          ${cell('Joining Date', fmtDate(s.joining_date))}
+        </div>
+        <div class="info-rows">
+          ${cell('Full Name', s.name)}
+          ${cell('Gender', s.gender)}
+          ${cell('Date of Birth', fmtDate(s.dob))}
+        </div>
+        <div class="info-rows">
+          ${cell('Aadhaar', s.aadhaar_number)}
+          ${cell('Nationality', s.nationality)}
+          ${cell('Religion', s.religion)}
+        </div>
+        <div class="info-rows">
+          ${cell('Target Goal / Exam', s.goal, 'span3')}
+        </div>
+
+        <!-- Contact -->
+        <div class="section-header"><p class="section-header-title">Contact &amp; Family</p></div>
+        <div class="info-rows">
+          ${cell('Phone', s.phone)}
+          ${cell('WhatsApp', s.whatsapp)}
+          ${cell('Email', s.email)}
+        </div>
+        <div class="info-rows">
+          ${cell('Emergency Contact', s.emergency_contact)}
+          ${cell('Father\'s Name', s.father_name)}
+          ${cell('Mother\'s Name', s.mother_name)}
+        </div>
+        <div class="info-rows">
+          ${cell('Parent Occupation', s.parent_occupation, 'span3')}
+        </div>
+
+        <!-- Address -->
+        <div class="section-header"><p class="section-header-title">Residential Address</p></div>
+        <div class="info-rows">
+          ${cell('Village / Area', s.address_village)}
+          ${cell('Post Office', s.address_po)}
+          ${cell('Police Station', s.address_ps)}
+        </div>
+        <div class="info-rows">
+          ${cell('District', s.address_district)}
+          ${cell('State', s.address_state)}
+          ${cell('PIN Code', s.address_pin)}
+        </div>
+        <div class="info-rows">
+          ${cell('Combined Address', s.address, 'span3')}
+        </div>
+
+        <!-- Academic -->
+        <div class="section-header"><p class="section-header-title">Academic Details</p></div>
+        <div class="info-rows">
+          ${cell('Current Class / Course', s.class, 'span3')}
+        </div>
+        <div class="info-rows">
+          ${cell('Matriculation (10th)', eduText(matric), 'span3')}
+        </div>
+        <div class="info-rows" style="border-bottom:none;">
+          ${cell('Intermediate (12th)', eduText(inter), 'span3')}
+        </div>
+      `;
+
+      // Seats
+      if (d.allocations && d.allocations.length) {
+        document.getElementById('seatsArea').innerHTML = d.allocations.map(a =>
+          `<div class="seat-strip">
+            <span class="seat-number">${a.seat_number}</span>
+            <div class="seat-meta">
+              <strong>${a.start_time} – ${a.end_time}</strong> &nbsp;·&nbsp; Active from ${fmtDate(a.valid_from)}
+            </div>
+            <span class="badge badge-green" style="margin-left:auto;">Active</span>
+          </div>`
+        ).join('');
+      } else {
+        document.getElementById('seatsArea').innerHTML = '<div class="empty-state">No active seat allocation.</div>';
+      }
+
+      // Activity log
+      if (d.logs && d.logs.length) {
+        document.getElementById('activityLog').innerHTML = '<div class="timeline">' +
+          d.logs.map(l =>
+            `<div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div>
+                <p class="timeline-msg">${l.message}</p>
+                <span class="timeline-ts">${fmtDate(l.created_at)}</span>
+              </div>
+            </div>`
+          ).join('') + '</div>';
+      } else {
+        document.getElementById('activityLog').innerHTML = '<div class="empty-state">No activity yet.</div>';
+      }
+
+      // Billing
+      const inTransition = d.inTransition;
+      if (inTransition) {
+        // Hide table entirely in transition mode
+        document.getElementById('billingTableWrapper').style.display = 'none';
+        document.getElementById('billingTransitionNotice').style.display = 'block';
+      } else {
+        document.getElementById('billingTransitionNotice').style.display = 'none';
+        document.getElementById('billingTableWrapper').style.display = 'block';
+        if (d.ledger && d.ledger.length) {
+          document.getElementById('billingBody').innerHTML = d.ledger.map(r => {
+            const total = (r.base_fee || 0) + (r.admission_fee || 0) + (r.fine_amount || 0);
+            const paid = r.amount_paid || 0;
+            const due = r.due_amount || 0;
+            const statusMap = { Paid: 'badge-green', Due: 'badge-amber', Partial: 'badge-amber', Overdue: 'badge-red', Waived: 'badge-green', Refunded: 'badge-green' };
+            const bc = statusMap[r.status] || 'badge-amber';
+            return `<tr style="cursor:pointer;" onclick="openStudentReceipt(${r.billing_id})" title="Click to view receipt">
+              <td>${fmtMonth(r.billing_month)}</td>
+              <td style="color:${r.admission_fee > 0 ? 'var(--blue)' : 'var(--text-muted)'};">${r.admission_fee > 0 ? '&#8377;' + r.admission_fee.toLocaleString('en-IN') : '—'}</td>
+              <td>&#8377;${total.toLocaleString('en-IN')}</td>
+              <td>&#8377;${paid.toLocaleString('en-IN')}</td>
+              <td style="color:${due > 0 ? 'var(--red)' : 'var(--text-muted)'};">&#8377;${due.toLocaleString('en-IN')}</td>
+              <td><span class="badge ${bc}">${r.status || 'Pending'}</span></td>
+              <td>${r.paid_at ? fmtDate(r.paid_at) : '—'}</td>
+            </tr>`;
+          }).join('');
+        } else {
+          document.getElementById('billingBody').innerHTML = '<tr><td colspan="7" class="empty-state">No billing records yet.</td></tr>';
+        }
+      }
+
+      // Pre-fill profile edit form
+      const fields = {
+        peFormNumber: s.form_number, peName: s.name, peGender: s.gender,
+        peDob: s.dob, peAadhaar: s.aadhaar_number, peGoal: s.goal,
+        peNationality: s.nationality || 'Indian', peReligion: s.religion,
+        pePhone: s.phone, peWhatsapp: s.whatsapp, peEmail: s.email,
+        peEmergency: s.emergency_contact, peFather: s.father_name,
+        peMother: s.mother_name, peParentOccupation: s.parent_occupation,
+        peVillage: s.address_village, pePo: s.address_po, pePs: s.address_ps,
+        peDistrict: s.address_district, peState: s.address_state,
+        pePin: s.address_pin, peAddress: s.address, peClass: s.class,
+        peMatricBoard: matric.board, peMatricYear: matric.year,
+        peMatricMarks: matric.marks, peMatricPercent: matric.percent,
+        peInterBoard: inter.board, peInterYear: inter.year,
+        peInterMarks: inter.marks, peInterPercent: inter.percent
+      };
+      Object.entries(fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || '';
+      });
+
+      // Prefill photo preview/hidden field with existing photo
+      const pePhotoImg = document.getElementById('pePhotoPreviewImg');
+      const pePhotoPlaceholder = document.getElementById('pePhotoPreviewPlaceholder');
+      const pePhotoData = document.getElementById('pePhotoData');
+      const pePhotoRemoveBtn = document.getElementById('pePhotoRemoveBtn');
+      if (s.photo_data) {
+        pePhotoData.value = s.photo_data;
+        pePhotoImg.src = s.photo_data;
+        pePhotoImg.style.display = 'block';
+        pePhotoPlaceholder.style.display = 'none';
+        pePhotoRemoveBtn.style.display = 'inline-flex';
+      }
+
+      if (new URLSearchParams(location.search).get('reset') === 'true') {
+        document.getElementById('pwdResetBanner').style.display = 'flex';
+      }
+
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  // ── Seat request ─────────────────────────────────────────
+  async function submitSeatRequest(e) {
+    e.preventDefault();
+    const btn = document.getElementById('seatReqBtn');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    try {
+      await api('/student/request-seat', {
+        method: 'POST',
+        body: JSON.stringify({
+          preferred_seat: document.getElementById('reqSeat').value,
+          preferred_start_time: document.getElementById('reqStart').value,
+          preferred_end_time: document.getElementById('reqEnd').value,
+          reason: document.getElementById('reqReason').value
+        })
+      });
+      toast('Seat change request submitted!');
+      document.getElementById('seatRequestForm').reset();
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Submit Request';
+    }
+  }
+
+  // ── Profile edit ─────────────────────────────────────────
+  function setupPhotoUploader(fileInputEl, previewImgEl, placeholderEl, removeBtnEl, hiddenInputEl) {
+    fileInputEl.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        toast("Please select an image smaller than 5MB.", true);
+        fileInputEl.value = "";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width, height = img.height;
+          const max_size = 300;
+          if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } }
+          else { if (height > max_size) { width *= max_size / height; height = max_size; } }
+          canvas.width = width; canvas.height = height;
+          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          previewImgEl.src = dataUrl;
+          previewImgEl.style.display = "block";
+          placeholderEl.style.display = "none";
+          hiddenInputEl.value = dataUrl;
+          if (removeBtnEl) removeBtnEl.style.display = "inline-flex";
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    if (removeBtnEl) {
+      removeBtnEl.onclick = () => {
+        fileInputEl.value = "";
+        previewImgEl.src = "";
+        previewImgEl.style.display = "none";
+        placeholderEl.style.display = "block";
+        hiddenInputEl.value = "";
+        removeBtnEl.style.display = "none";
+      };
+    }
+  }
+  document.getElementById('pePhotoUploadBtn').onclick = () => document.getElementById('pePhotoFile').click();
+  setupPhotoUploader(
+    document.getElementById('pePhotoFile'),
+    document.getElementById('pePhotoPreviewImg'),
+    document.getElementById('pePhotoPreviewPlaceholder'),
+    document.getElementById('pePhotoRemoveBtn'),
+    document.getElementById('pePhotoData')
+  );
+
+  async function submitProfileEdit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('profileEditBtn');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    const g = id => document.getElementById(id).value;
+    const eduHistory = [
+      { level:'Matric',        board:g('peMatricBoard'), year:g('peMatricYear')?parseInt(g('peMatricYear')):null, marks:g('peMatricMarks'), percent:g('peMatricPercent')?parseFloat(g('peMatricPercent')):null },
+      { level:'Intermediate',  board:g('peInterBoard'),  year:g('peInterYear')?parseInt(g('peInterYear')):null,  marks:g('peInterMarks'),  percent:g('peInterPercent')?parseFloat(g('peInterPercent')):null }
+    ];
+    try {
+      await api('/student/edit-profile', {
+        method: 'POST',
+        body: JSON.stringify({
+          name:g('peName'), gender:g('peGender'), dob:g('peDob'),
+          phone:g('pePhone'), whatsapp:g('peWhatsapp'), email:g('peEmail'),
+          aadhaar_number:g('peAadhaar'), goal:g('peGoal'),
+          nationality:g('peNationality'), religion:g('peReligion'),
+          emergency_contact:g('peEmergency'), father_name:g('peFather'),
+          mother_name:g('peMother'), parent_occupation:g('peParentOccupation'),
+          address_village:g('peVillage'), address_po:g('pePo'),
+          address_ps:g('pePs'), address_district:g('peDistrict'),
+          address_state:g('peState'), address_pin:g('pePin'),
+          address:g('peAddress'), form_number:g('peFormNumber'),
+          class:g('peClass'), education_history:JSON.stringify(eduHistory),
+          photo_data: document.getElementById('pePhotoData').value.trim()
+        })
+      });
+      toast('Profile update submitted for admin review.');
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Submit Profile Update';
+    }
+  }
+
+  // ── Change password ──────────────────────────────────────
+  async function changePassword(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('pwdError');
+    errEl.style.display = 'none';
+    const newPwd = document.getElementById('newPwd').value;
+    if (newPwd !== document.getElementById('confirmPwd').value) {
+      errEl.textContent = 'New passwords do not match.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const btn = document.getElementById('changePwdBtn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      await api('/student/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ old_password: document.getElementById('oldPwd').value, new_password: newPwd })
+      });
+      toast('Password changed successfully!');
+      document.getElementById('changePwdForm').reset();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Update Password';
+    }
+  }
+
+  // ── Temp pwd modal ───────────────────────────────────────
+  function openPwdModal() {
+    document.getElementById('pwdModal').style.display = 'flex';
+    document.getElementById('modalOldPwd').focus();
+  }
+  async function submitModalPwd() {
+    const errEl = document.getElementById('modalPwdError');
+    errEl.style.display = 'none';
+    const newPwd = document.getElementById('modalNewPwd').value;
+    if (newPwd.length < 8) { errEl.textContent = 'Minimum 8 characters.'; errEl.style.display = 'block'; return; }
+    if (newPwd !== document.getElementById('modalConfirmPwd').value) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+    const btn = document.getElementById('modalSaveBtn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      await api('/student/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ old_password: document.getElementById('modalOldPwd').value, new_password: newPwd })
+      });
+      document.getElementById('pwdModal').style.display = 'none';
+      document.getElementById('pwdResetBanner').style.display = 'none';
+      history.replaceState({}, '', '/student-portal.html');
+      toast('Password changed! Your account is now secured.');
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save Password';
+    }
+  }
+
+  // ── Student Receipt Modal ──────────────────────────────────────────────────
+  window.openStudentReceipt = function(billingId) {
+    if (!_portalData) return;
+
+    const rec = (_portalData.ledger || []).find(r => r.billing_id === billingId);
+    if (!rec) return;
+
+    const txs = (_portalData.transactions || {})[billingId] || [];
+    const instituteName = _portalData.instituteName || 'Study Center';
+    const student = _portalData.student || {};
+    const overlay = document.getElementById('studentReceiptModalOverlay');
+    overlay.style.display = 'flex';
+
+    document.getElementById('sReceiptInstituteName').textContent = instituteName;
+    document.getElementById('sReceiptStudentName').textContent = student.name || '—';
+    document.getElementById('sReceiptStudentPhone').textContent = student.phone || student.whatsapp || '—';
+    document.getElementById('sReceiptFatherName').textContent = student.father_name || '—';
+    document.getElementById('sReceiptStudentId').textContent = `STC-${String(student.student_id).padStart(4, '0')}`;
+    document.getElementById('sReceiptBillingMonth').textContent = rec.billing_month;
+    document.getElementById('sReceiptPaymentDate').textContent = rec.paid_at ? fmtDate(rec.paid_at) : '—';
+    document.getElementById('sReceiptPaymentMode').textContent = rec.payment_mode || '—';
+
+    // Bill number — combine from transactions if multiple
+    let billNo = rec.bill_number || '—';
+    if (txs.length > 1) {
+      const nums = txs.map(t => t.bill_number).filter(Boolean);
+      if (nums.length) {
+        const allSameMonth = nums.every(n => n.substring(0,7) === nums[0].substring(0,7));
+        billNo = allSameMonth
+          ? nums[0].substring(0,8) + nums.map(n => n.split('-').pop()).join('/')
+          : nums.join(' / ');
+      }
+    } else if (txs.length === 1 && txs[0].bill_number) {
+      billNo = txs[0].bill_number;
+    }
+    document.getElementById('sReceiptBillNo').textContent = billNo;
+
+    const expected = (rec.base_fee||0) + (rec.admission_fee||0) + (rec.fine_amount||0);
+    const paid = rec.amount_paid || 0;
+    const due = rec.due_amount || 0;
+
+    document.getElementById('sReceiptBaseFee').textContent = `₹${(rec.base_fee||0).toLocaleString('en-IN')}`;
+
+    const admRow = document.getElementById('sReceiptAdmissionRow');
+    if (rec.admission_fee > 0) {
+      document.getElementById('sReceiptAdmissionFee').textContent = `₹${rec.admission_fee.toLocaleString('en-IN')}`;
+      admRow.style.display = 'flex';
+    } else { admRow.style.display = 'none'; }
+
+    const fineRow = document.getElementById('sReceiptFineRow');
+    if (rec.fine_amount > 0) {
+      document.getElementById('sReceiptFineAmount').textContent = `₹${rec.fine_amount.toLocaleString('en-IN')}`;
+      fineRow.style.display = 'flex';
+    } else { fineRow.style.display = 'none'; }
+
+    document.getElementById('sReceiptTotalExpected').textContent = `₹${expected.toLocaleString('en-IN')}`;
+    document.getElementById('sReceiptTotalPaid').textContent = `₹${paid.toLocaleString('en-IN')}`;
+    document.getElementById('sReceiptRemainingDue').textContent = `₹${due.toLocaleString('en-IN')}`;
+    const balRow = document.getElementById('sReceiptBalanceRow');
+    balRow.style.color = due > 0 ? '#ea580c' : '#9ca3af';
+
+    const noteRow = document.getElementById('sReceiptNoteRow');
+    if (rec.note) {
+      document.getElementById('sReceiptNote').textContent = `Note: ${rec.note}`;
+      noteRow.style.display = 'block';
+    } else { noteRow.style.display = 'none'; }
+
+    // Transactions block
+    const txBlock = document.getElementById('sReceiptTransactionsBlock');
+    const txList = document.getElementById('sReceiptTransactionsList');
+    if (txs.length > 1) {
+      txList.innerHTML = txs.map(t => `<div style="display:flex;justify-content:space-between;padding:2px 0;">
+        <span>${t.bill_number || '—'} · ${t.payment_mode || '—'} · ${t.payment_date || '—'}</span>
+        <span>₹${Number(t.amount_paid).toLocaleString('en-IN')}</span>
+      </div>`).join('');
+      txBlock.style.display = 'block';
+    } else { txBlock.style.display = 'none'; }
+
+    // Status summary — hard-coded colors, not CSS vars
+    const summaryEl = document.getElementById('sReceiptStatusSummary');
+    if (rec.status === 'Paid') {
+      summaryEl.textContent = '✓ PAID IN FULL';
+      summaryEl.style.color = '#16a34a';
+    } else if (rec.status === 'Partial') {
+      summaryEl.textContent = `PARTIAL — ₹${due.toLocaleString('en-IN')} remaining`;
+      summaryEl.style.color = '#ea580c';
+    } else if (rec.status === 'Waived') {
+      summaryEl.textContent = '✓ WAIVED';
+      summaryEl.style.color = '#16a34a';
+    } else {
+      summaryEl.textContent = `DUE — ₹${due.toLocaleString('en-IN')}`;
+      summaryEl.style.color = '#dc2626';
+    }
+  };
+
+  window.closeStudentReceipt = function() {
+    document.getElementById('studentReceiptModalOverlay').style.display = 'none';
+  };
+
+  window.downloadStudentReceipt = function() {
+    const card = document.getElementById('studentReceiptCard');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+  body{margin:0;padding:16px;background:#fff;font-family:system-ui,sans-serif;}
+  *{box-sizing:border-box;}
+  .sr-institute{font-size:15px;font-weight:700;color:#111827;letter-spacing:-0.02em;}
+  .sr-subtitle{font-size:9.5px;font-family:monospace;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;margin-top:1px;}
+  .sr-badge{font-size:10px;font-family:monospace;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#6b7280;border:1px solid #e5e7eb;border-radius:4px;padding:3px 7px;}
+  .sr-header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 10px;border-bottom:2px dashed #e5e7eb;}
+  .sr-body{padding:14px 18px;display:flex;flex-direction:column;gap:12px;}
+  .sr-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;}
+  .sr-lbl{font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:2px;font-family:monospace;}
+  .sr-val{font-size:12.5px;font-weight:600;color:#111827;}
+  .sr-val.mono{font-family:monospace;}
+  .sr-fees{display:flex;flex-direction:column;gap:3px;font-family:monospace;font-size:12px;color:#111827;padding-bottom:10px;border-bottom:1px solid #e5e7eb;}
+  .sr-fee-row,.sr-total,.sr-collected,.sr-balance{display:flex;justify-content:space-between;}
+  .sr-total{font-weight:700;}
+  .sr-collected{font-weight:600;color:#16a34a;}
+  .sr-divider{border-top:1px solid #e5e7eb;margin:4px 0;}
+  .sr-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .sr-status{font-family:monospace;font-size:12px;font-weight:700;letter-spacing:0.02em;}
+  #sReceiptAdmissionRow,#sReceiptFineRow,#sReceiptTransactionsBlock,#sReceiptNoteRow{display:none;}
+</style></head><body>${card.outerHTML}</body></html>`;
+    const blob = new Blob([html], {type: 'text/html'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const billNo = document.getElementById('sReceiptBillNo').textContent.replace(/[^a-zA-Z0-9-]/g,'_');
+    a.download = `Receipt_${billNo}.html`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  // Close on backdrop click
+  document.getElementById('studentReceiptModalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeStudentReceipt();
+  });
+
+  loadPortal();
+</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Seat Map — StudySpace</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      .seat-map-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .seat-map-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .current-time {
+        font-family: monospace;
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+      .seat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+        gap: 10px;
+        margin-bottom: 1.5rem;
+        width: 100%;
+      }
+      .seat-box {
+        aspect-ratio: 1;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11.5px;
+        font-family: monospace;
+        font-weight: 700;
+        position: relative;
+        cursor: default;
+        transition: all 0.2s ease;
+        user-select: none;
+      }
+      .seat-box.occupied {
+        background: #eff6ff;
+        border: 2px solid #3b82f6;
+        color: #1d4ed8;
+        cursor: help;
+      }
+      .seat-box.occupied:hover {
+        transform: scale(1.08);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+      }
+      .seat-box.part-booked {
+        background: #faf5ff;
+        border: 2px solid #c084fc;
+        color: #7e22ce;
+        cursor: help;
+      }
+      .seat-box.part-booked:hover {
+        transform: scale(1.08);
+        box-shadow: 0 4px 12px rgba(192, 132, 252, 0.2);
+      }
+      .seat-box.available {
+        background: #f0fdf4;
+        border: 2px solid #22c55e;
+        color: #15803d;
+        cursor: help;
+      }
+      .seat-box.available:hover {
+        transform: scale(1.08);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+      }
+      .seat-box.disabled {
+        background: #f9fafb;
+        border: 2px dashed #d1d5db;
+        color: #9ca3af;
+      }
+      .seat-box.is24 {
+        background: #fff7ed;
+        border: 2px solid #ea580c;
+        color: #c2410c;
+        cursor: help;
+      }
+      .seat-box.is24:hover {
+        transform: scale(1.08);
+        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);
+      }
+      .seat-tooltip {
+        position: absolute;
+        bottom: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--dark);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-family: monospace;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 10;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+      .seat-tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: var(--dark);
+      }
+      .seat-box:hover .seat-tooltip {
+        opacity: 1;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-soft);
+        margin-top: 1.5rem;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+      }
+      /* Toast styling */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: var(--dark);
+        color: #fff;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+        z-index: 9999;
+        transform: translateY(60px);
+        opacity: 0;
+        transition: transform 0.25s ease, opacity 0.25s ease;
+        pointer-events: none;
+      }
+      .toast.show { transform: translateY(0); opacity: 1; }
+      .toast-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .toast.success .toast-dot { background: #3fb950; }
+      .toast.error   .toast-dot { background: #f85149; }
+    </style>
+  </head>
+  <body>
+    <div id="shell"></div>
+    <div class="toast" id="toast">
+      <div class="toast-dot"></div>
+      <span id="toastMsg"></span>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script>
+      renderShell(
+        "seats",
+        "Seat Map",
+        "live physical layout of the study center • numbers represent actual seats"
+      );
+
+      const content = document.getElementById("page-content");
+      content.innerHTML = `<div class="card" id="seatCard">Loading...</div>`;
+
+      let currentSeats = [];
+      let refreshInterval = null;
+
+      function getCurrentTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, "0");
+        const mins = String(now.getMinutes()).padStart(2, "0");
+        return `${hours}:${mins}`;
+      }
+
+      function formatTime(timeStr) {
+        return timeStr.slice(0, 5);
+      }
+
+      function isOccupiedNow(occupants) {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+        const currentTime = currentHour * 60 + currentMin;
+
+        return occupants.some((o) => {
+          const [sh, sm] = o.start_time.split(":").map(Number);
+          const [eh, em] = o.end_time.split(":").map(Number);
+          const startTime = sh * 60 + sm;
+          const endTime = eh * 60 + em;
+
+          if (startTime === endTime) return true;
+
+          if (startTime < endTime) {
+            return currentTime >= startTime && currentTime < endTime;
+          } else {
+            return currentTime >= startTime || currentTime < endTime;
+          }
+        });
+      }
+
+      // Toast Notification
+      let _toastTimer;
+      function showToast(msg, type = 'success') {
+        const el = document.getElementById('toast');
+        if (!el) return;
+        el.className = `toast ${type}`;
+        document.getElementById('toastMsg').textContent = msg;
+        el.classList.add('show');
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+      }
+
+      function renderGrid() {
+        let html = `
+          <div class="seat-map-header">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <h3>Real-time Seat Availability</h3>
+              <p style="margin:0; font-size:11.5px; color:var(--text-muted);">
+                Occupied seats are blue, vacant are green. Hover for booking timelines.
+              </p>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="current-time" style="display: flex; align-items: center; gap: 4px;"><svg class="clock-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Time: <span id="timeDisplay">${getCurrentTime()}</span></div>
+            </div>
+          </div>
+          <div class="seat-grid">
+        `;
+
+        for (const s of currentSeats) {
+          let cls = "available";
+          let occupied = false;
+
+          if (s.status === "Disabled") {
+            cls = "disabled";
+          } else if (s.is24Hour) {
+            cls = "is24";
+            occupied = true;
+          } else if (s.occupants && s.occupants.length > 0 && isOccupiedNow(s.occupants)) {
+            cls = "occupied";
+            occupied = true;
+          } else if (s.occupants && s.occupants.length > 0) {
+            cls = "part-booked";
+          }
+
+          let tooltip = "Vacant";
+          if (occupied && s.occupants && s.occupants.length > 0) {
+            const occupant = s.occupants[0];
+            tooltip = `${occupant.name} • ${formatTime(occupant.start_time)}–${formatTime(occupant.end_time)}`;
+          } else if (s.occupants && s.occupants.length > 0) {
+            const occupant = s.occupants[0];
+            tooltip = `${occupant.name} (next: ${formatTime(occupant.start_time)})`;
+          }
+
+          html += `
+            <div class="seat-box ${cls}">
+              <div class="seat-tooltip">${tooltip}</div>
+              ${s.seat_number}
+            </div>
+          `;
+        }
+
+        html += `</div>`;
+
+        html += `
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#eff6ff; border: 2px solid #3b82f6;"></div><span class="mono" style="font-size:11px; color:var(--text-muted);">Occupied Now</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#f0fdf4; border: 2px solid #22c55e;"></div><span class="mono" style="font-size:11px; color:var(--text-muted);">Fully Available (All Day)</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#faf5ff; border: 2px solid #c084fc;"></div><span class="mono" style="font-size:11px; color:var(--text-muted);">Partially Booked</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#fff7ed; border: 2px solid #ea580c;"></div><span class="mono" style="font-size:11px; color:var(--text-muted);">24-hr Block</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#f9fafb; border: 2px dashed #d1d5db;"></div><span class="mono" style="font-size:11px; color:var(--text-muted);">Disabled</span></div>
+          </div>
+        `;
+
+        document.getElementById("seatCard").innerHTML = html;
+      }
+
+      function startInterval() {
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => {
+          const timeDisplay = document.getElementById("timeDisplay");
+          if (timeDisplay) timeDisplay.textContent = getCurrentTime();
+          load(); // Refresh data every minute
+        }, 60000);
+      }
+
+      async function load() {
+        try {
+          const seats = await api("/seats");
+          if (!seats.length) {
+            document.getElementById("seatCard").innerHTML = `
+              <div style="text-align: center; padding: 3rem 1.5rem; color: var(--text-muted); display: flex; flex-direction: column; align-items: center;">
+                <div style="margin-bottom: 1rem; color: var(--text-faint); display: flex; justify-content: center;"><svg class="seat-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v3m16-3v3M4 14h16M4 10h16M4 6h16M19 6V4a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v2"/></svg></div>
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text);">Seats Not Configured</h3>
+                <p style="font-size: 13px; color: var(--text-faint); margin-bottom: 1.25rem;">
+                  Please set up the application first by configuring the total seats in Settings.
+                </p>
+                <a class="btn btn-primary" href="settings.html" style="text-decoration:none; display:inline-block;">Go to Settings</a>
+              </div>
+            `;
+            return;
+          }
+
+          currentSeats = seats;
+          renderGrid();
+          startInterval();
+        } catch (err) {
+          document.getElementById("seatCard").innerHTML =
+            `<div class="error-banner">${err.message}</div>`;
+        }
+      }
+
+      load();
+      window.onLiveUpdate = (data) => {
+        if (data.type === 'seats' || data.type === 'allocations' || data.type === 'students') {
+          load();
+        }
+      };
+    </script>
+  </body>
+</html>

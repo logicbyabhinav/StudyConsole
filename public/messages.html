@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="description"
+      content="Sleek, multi-tab communications outbox hub for managing WhatsApp messages to students."
+    />
+    <title>Messages — StudySpace</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      /* --- Premium WhatsApp Outbox Hub Styles --- */
+      .messages-stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        padding: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.2s ease;
+      }
+      .stat-card:hover {
+        border-color: var(--border);
+        box-shadow: var(--shadow-md);
+      }
+      .stat-card .value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text);
+        font-family: var(--font-mono);
+      }
+      .stat-card .label {
+        font-size: 11.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+      }
+
+      /* Glassmorphic Tab Selector */
+      .outbox-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border-soft);
+        padding-bottom: 12px;
+        overflow-x: auto;
+      }
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 13.5px;
+        font-weight: 600;
+        padding: 10px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .tab-btn:hover {
+        color: var(--text);
+        background: var(--border-soft);
+      }
+      .tab-btn.active {
+        color: var(--blue);
+        background: var(--blue-light);
+      }
+      .tab-btn .badge-count {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: var(--border);
+        color: var(--text-muted);
+        transition: all 0.2s ease;
+      }
+      .tab-btn.active .badge-count {
+        background: var(--blue);
+        color: #ffffff;
+      }
+
+      /* Zero Inbox Empty State */
+      .zero-inbox {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        background: var(--card-bg);
+        border: 1px dashed var(--border);
+        border-radius: 16px;
+        text-align: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+        margin-top: 10px;
+      }
+      .zero-inbox-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: var(--green-light);
+        color: var(--green);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 14px rgba(63, 185, 80, 0.12);
+        animation: pulse 2s infinite ease-in-out;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.04); }
+      }
+      .zero-inbox h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .zero-inbox p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-muted);
+        max-width: 380px;
+        line-height: 1.5;
+      }
+
+      /* Action Buttons */
+      .action-btns {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+      .btn-wa {
+        background: #25D366;
+        color: #ffffff;
+        border: 1px solid #20ba59;
+        font-weight: 600;
+      }
+      .btn-wa:hover {
+        background: #20ba59;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(37, 211, 102, 0.2);
+      }
+      .btn-wa svg {
+        fill: currentColor;
+        margin-right: 6px;
+      }
+      .btn-mark-sent {
+        background: var(--bg);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+        font-weight: 600;
+      }
+      .btn-mark-sent:hover {
+        background: var(--border-soft);
+        color: var(--text);
+      }
+
+      /* Row fade-out and collapse animations */
+      .reminder-row {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .reminder-row.fade-out {
+        opacity: 0;
+        transform: translateX(30px);
+        background: var(--bg) !important;
+      }
+      .reminder-row.collapsed {
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        overflow: hidden;
+      }
+
+      /* Details styling */
+      .fee-breakdown, .meta-subtitle {
+        font-size: 11px;
+        color: var(--text-faint);
+        margin-top: 3px;
+      }
+      .student-meta {
+        font-size: 11.5px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+
+    </style>
+  </head>
+  <body>
+    <div id="shell"></div>
+    
+
+
+    <script src="js/common.js"></script>
+    <script>
+      renderShell(
+        "messages",
+        "Messages",
+        "A communications outbox hub for managing and dispatching WhatsApp notifications.",
+      );
+
+      const content = document.getElementById("page-content");
+      let activeReminders = [];
+      let currentTab = "Dues"; // Active tab: Dues, Welcome, Receipt, Status
+
+      content.innerHTML = `
+        <!-- Stats Section -->
+        <div class="messages-stats">
+          <div class="stat-card">
+            <span class="label">Total Queued Messages</span>
+            <span class="value" id="statPending">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="label">Outbox Status</span>
+            <span class="value" id="statStatus">Loading...</span>
+          </div>
+        </div>
+
+        <!-- Professional Tabs Selector (No Emojis) -->
+        <div class="outbox-tabs">
+          <button class="tab-btn active" id="tab-Dues" onclick="switchTab('Dues')">
+            Dues Reminders <span class="badge-count" id="badgeDues">0</span>
+          </button>
+          <button class="tab-btn" id="tab-Welcome" onclick="switchTab('Welcome')">
+            Welcome Alerts <span class="badge-count" id="badgeWelcome">0</span>
+          </button>
+          <button class="tab-btn" id="tab-Receipt" onclick="switchTab('Receipt')">
+            Payment Receipts <span class="badge-count" id="badgeReceipt">0</span>
+          </button>
+          <button class="tab-btn" id="tab-Status" onclick="switchTab('Status')">
+            Status Updates <span class="badge-count" id="badgeStatus">0</span>
+          </button>
+        </div>
+
+        <!-- Table Card -->
+        <div class="card" id="remindersTableCard" style="display: none;">
+          <div class="card-header">
+            <h3 id="tableTitle">Pending Reminders</h3>
+          </div>
+          <table class="table-roomy">
+            <thead id="remindersTableHead">
+              <!-- Dynamically populated headers -->
+            </thead>
+            <tbody id="remindersTableBody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Inbox Zero State (Vector SVG Checkmark, No Emojis) -->
+        <div class="zero-inbox" id="zeroInboxState" style="display: none;">
+          <div class="zero-inbox-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h3>Inbox Zero</h3>
+          <p>All outstanding messages for <strong id="zeroInboxType">Dues Reminders</strong> have been dispatched. Your queue is clean.</p>
+        </div>
+      `;
+
+
+
+      // ── Tab Switching ─────────────────────────────────────────────
+      window.switchTab = function(tabName) {
+        currentTab = tabName;
+        
+        // Update active tab styles
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+        document.getElementById(`tab-${tabName}`).classList.add("active");
+        
+        // Update table title
+        const titles = {
+          Dues: "Pending Dues Reminders",
+          Welcome: "Pending Welcome Alerts",
+          Receipt: "Pending Payment Receipts",
+          Status: "Pending Status Updates"
+        };
+        document.getElementById("tableTitle").textContent = titles[tabName] || "Queued Messages";
+
+        renderReminders();
+      };
+
+      function getTabDisplayName(tab) {
+        const names = {
+          Dues: "Dues Reminders",
+          Welcome: "Welcome Alerts",
+          Receipt: "Payment Receipts",
+          Status: "Status Updates"
+        };
+        return names[tab] || tab;
+      }
+
+      // ── Format Helper: '2026-06' -> 'June 2026' ──────────────────
+      function formatMonthLabel(yyyymm) {
+        if (!yyyymm) return "N/A";
+        const [y, m] = yyyymm.split("-");
+        return new Date(+y, +m - 1, 1).toLocaleString("en-US", {
+          month: "long",
+          year: "numeric",
+        });
+      }
+
+      // ── Format WhatsApp Deep Link ─────────────────────────────────
+      function getWhatsAppLink(item) {
+        const phone = item.phone;
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length === 10) {
+          cleaned = '91' + cleaned;
+        }
+        return `https://wa.me/${cleaned}?text=${encodeURIComponent(item.message_text)}`;
+      }
+
+      // ── Load Reminders ────────────────────────────────────────────
+      async function loadReminders() {
+        try {
+          const list = await api("/messages/pending");
+          activeReminders = list;
+          updateBadges();
+          renderReminders();
+        } catch (err) {
+          showToast("Failed to load reminders: " + err.message);
+        }
+      }
+
+      // ── Update Badges and Counts ──────────────────────────────────
+      function updateBadges() {
+        const counts = { Dues: 0, Welcome: 0, Receipt: 0, Status: 0 };
+        for (const item of activeReminders) {
+          if (counts.hasOwnProperty(item.message_type)) {
+            counts[item.message_type]++;
+          }
+        }
+        
+        document.getElementById("badgeDues").textContent = counts.Dues;
+        document.getElementById("badgeWelcome").textContent = counts.Welcome;
+        document.getElementById("badgeReceipt").textContent = counts.Receipt;
+        document.getElementById("badgeStatus").textContent = counts.Status;
+        
+        document.getElementById("statPending").textContent = activeReminders.length;
+      }
+
+      // ── Render Headers Dynamically ────────────────────────────────
+      function getTableHeadersHTML(tab) {
+        if (tab === "Dues") {
+          return `
+            <tr>
+              <th>Student</th>
+              <th>Seat</th>
+              <th>Due Period</th>
+              <th style="text-align: right;">Outstanding Dues</th>
+              <th style="text-align: center; width: 280px;">Actions</th>
+            </tr>
+          `;
+        } else if (tab === "Welcome") {
+          return `
+            <tr>
+              <th>Student</th>
+              <th>Assigned Seat</th>
+              <th>Joining Date</th>
+              <th>Shift / Timing Details</th>
+              <th style="text-align: center; width: 280px;">Actions</th>
+            </tr>
+          `;
+        } else if (tab === "Receipt") {
+          return `
+            <tr>
+              <th>Student</th>
+              <th>Seat</th>
+              <th>Receipt Details</th>
+              <th style="text-align: right;">Amount Paid</th>
+              <th style="text-align: center; width: 280px;">Actions</th>
+            </tr>
+          `;
+        } else if (tab === "Status") {
+          return `
+            <tr>
+              <th>Student</th>
+              <th>Seat</th>
+              <th>Event Type</th>
+              <th>Message Preview</th>
+              <th style="text-align: center; width: 280px;">Actions</th>
+            </tr>
+          `;
+        }
+        return "";
+      }
+
+      // ── Render Rows Dynamically ───────────────────────────────────
+      function getRowHTML(tab, item) {
+        const phoneMeta = `W: ${item.phone} &middot; ID: STC-${String(item.student_id).padStart(4, "0")}`;
+        const actionCell = `
+          <td style="text-align:center;">
+            <div class="action-btns">
+              <button class="btn btn-wa" onclick="sendWhatsApp(${item.queue_id})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.52 5.307 1.527 5.483.002 9.948-4.463 9.95-9.948.002-2.657-1.033-5.156-2.907-7.03s-4.37-2.912-7.027-2.914c-5.486 0-9.95 4.463-9.952 9.949-.002 2.032.528 3.641 1.536 5.31l-.994 3.633 3.725-.978zm13.113-11.53c-.302-.15-.1.353-.453-.523l-.15-.075c-.323-.16-.761-.377-1.124-.556-.075-.037-.113-.056-.113-.056s-.113.056-.226.188c-.113.131-.453.526-.566.638-.113.113-.226.113-.528-.037-.302-.15-1.274-.47-2.426-1.498-.896-.799-1.502-1.786-1.678-2.086-.176-.3-.019-.462.13-.611.135-.134.302-.353.453-.529.151-.177.201-.293.302-.49.101-.196.05-.377-.025-.527-.075-.15-.678-1.636-.93-2.238-.246-.583-.518-.504-.712-.514-.184-.01-.395-.012-.607-.012-.211 0-.556.08-.847.4-.291.32-1.112 1.087-1.112 2.65 0 1.563 1.138 3.076 1.293 3.287.156.21 2.239 3.42 5.423 4.795.757.327 1.348.522 1.81.667.76.241 1.453.207 2.002.125.612-.091 1.879-.768 2.143-1.472.264-.704.264-1.307.185-1.427-.079-.12-.291-.27-.593-.42z"/></svg>
+                Send WhatsApp
+              </button>
+              <button class="btn btn-mark-sent" onclick="markAsSent(${item.queue_id})">
+                Mark Sent
+              </button>
+            </div>
+          </td>
+        `;
+
+        if (tab === "Dues") {
+          const feeDesc = [];
+          if (item.base_fee > 0) feeDesc.push(`Base: ₹${item.base_fee}`);
+          if (item.admission_fee > 0) feeDesc.push(`Adm: ₹${item.admission_fee}`);
+          if (item.fine_amount > 0) feeDesc.push(`Fine: ₹${item.fine_amount}`);
+          const breakdown = feeDesc.join(" + ");
+
+          return `
+            <tr class="reminder-row" id="row-${item.queue_id}">
+              <td>
+                <div style="font-weight:600; color:var(--text);">${item.student_name}</div>
+                <div class="student-meta">${phoneMeta}</div>
+              </td>
+              <td>
+                <span class="badge badge-blue" style="font-family:var(--font-mono); font-weight:600; font-size:11.5px;">Seat ${item.seats}</span>
+              </td>
+              <td style="font-weight:500; color:var(--text);">${formatMonthLabel(item.billing_month)}</td>
+              <td style="text-align:right;">
+                <div style="font-weight:600; color:var(--red);">₹${(item.due_amount || 0).toLocaleString("en-IN")}</div>
+                <div class="fee-breakdown">${breakdown}</div>
+              </td>
+              ${actionCell}
+            </tr>
+          `;
+        } else if (tab === "Welcome") {
+          const shiftText = `${item.duration_hours || 0} hours/day`;
+          return `
+            <tr class="reminder-row" id="row-${item.queue_id}">
+              <td>
+                <div style="font-weight:600; color:var(--text);">${item.student_name}</div>
+                <div class="student-meta">${phoneMeta}</div>
+              </td>
+              <td>
+                <span class="badge badge-green" style="font-family:var(--font-mono); font-weight:600; font-size:11.5px;">Seat ${item.seats}</span>
+              </td>
+              <td style="font-weight:500; color:var(--text);">${item.joining_date || "N/A"}</td>
+              <td>
+                <div style="font-weight:600; color:var(--text);">${shiftText}</div>
+                <div class="meta-subtitle">Welcome alert queued</div>
+              </td>
+              ${actionCell}
+            </tr>
+          `;
+        } else if (tab === "Receipt") {
+          const txAmt = item.tx_amount || 0;
+          const dueAmt = item.due_amount || 0;
+          return `
+            <tr class="reminder-row" id="row-${item.queue_id}">
+              <td>
+                <div style="font-weight:600; color:var(--text);">${item.student_name}</div>
+                <div class="student-meta">${phoneMeta}</div>
+              </td>
+              <td>
+                <span class="badge badge-blue" style="font-family:var(--font-mono); font-weight:600; font-size:11.5px;">Seat ${item.seats}</span>
+              </td>
+              <td>
+                <div style="font-weight:600; color:var(--text);">Bill: ${item.bill_number || "N/A"}</div>
+                <div class="meta-subtitle">Mode: ${item.payment_mode || "N/A"} &middot; Date: ${item.payment_date || "N/A"} &middot; Bal: ₹${dueAmt}</div>
+              </td>
+              <td style="text-align:right; font-weight:600; color:var(--green);">
+                ₹${txAmt.toLocaleString("en-IN")}
+              </td>
+              ${actionCell}
+            </tr>
+          `;
+        } else if (tab === "Status") {
+          // Categorize and color-code the specific status event type (Suspension, Reactivation, Archived, Reallocation)
+          let eventType = "Status Update";
+          let badgeClass = "badge-gray";
+          const msgTextLower = item.message_text.toLowerCase();
+          
+          if (msgTextLower.includes("suspended")) {
+            eventType = "Suspension";
+            badgeClass = "badge-red";
+          } else if (msgTextLower.includes("reactivated")) {
+            eventType = "Reactivation";
+            badgeClass = "badge-green";
+          } else if (msgTextLower.includes("archived")) {
+            eventType = "Archived";
+            badgeClass = "badge-gray";
+          } else if (msgTextLower.includes("reallocation") || msgTextLower.includes("reallocated")) {
+            eventType = "Reallocation";
+            badgeClass = "badge-blue";
+          }
+
+          // Truncate message preview
+          const msgPreview = item.message_text.length > 90 ? item.message_text.slice(0, 90) + "..." : item.message_text;
+
+          return `
+            <tr class="reminder-row" id="row-${item.queue_id}">
+              <td>
+                <div style="font-weight:600; color:var(--text);">${item.student_name}</div>
+                <div class="student-meta">${phoneMeta}</div>
+              </td>
+              <td>
+                <span class="badge badge-gray" style="font-family:var(--font-mono); font-weight:600; font-size:11.5px;">Seat ${item.seats}</span>
+              </td>
+              <td>
+                <span class="badge ${badgeClass}" style="font-weight:600; font-size:11px; text-transform: uppercase; letter-spacing: 0.02em;">${eventType}</span>
+              </td>
+              <td>
+                <div style="font-weight:500; color:var(--text); font-style: italic; font-size:12.5px; line-height:1.4;">"${msgPreview.replace(/\n/g, ' ')}"</div>
+              </td>
+              ${actionCell}
+            </tr>
+          `;
+        }
+        return "";
+      }
+
+      // ── Render Reminders ──────────────────────────────────────────
+      function renderReminders() {
+        const tbody = document.getElementById("remindersTableBody");
+        const tableCard = document.getElementById("remindersTableCard");
+        const zeroState = document.getElementById("zeroInboxState");
+        const statStatus = document.getElementById("statStatus");
+
+        const filtered = activeReminders.filter(item => item.message_type === currentTab);
+        
+        updateBadges();
+
+        if (filtered.length === 0) {
+          tableCard.style.display = "none";
+          zeroState.style.display = "flex";
+          document.getElementById("zeroInboxType").textContent = getTabDisplayName(currentTab);
+          
+          // Determine overall status
+          const totalPending = activeReminders.length;
+          if (totalPending === 0) {
+            statStatus.textContent = "Clean";
+            statStatus.style.color = "var(--green)";
+          } else {
+            statStatus.textContent = "Action Needed";
+            statStatus.style.color = "var(--orange)";
+          }
+          return;
+        }
+
+        tableCard.style.display = "block";
+        zeroState.style.display = "none";
+        statStatus.textContent = "Action Needed";
+        statStatus.style.color = "var(--orange)";
+
+        // Populate table headers and rows
+        document.getElementById("remindersTableHead").innerHTML = getTableHeadersHTML(currentTab);
+        tbody.innerHTML = filtered.map((item) => getRowHTML(currentTab, item)).join("");
+      }
+
+      // ── Process Sent Action (Row Fade Out & API Invocation) ────────
+      async function processSent(queueId) {
+        const row = document.getElementById(`row-${queueId}`);
+        if (row) {
+          row.classList.add("fade-out");
+          setTimeout(() => {
+            row.classList.add("collapsed");
+            setTimeout(() => {
+              // Remove from local array and re-render
+              activeReminders = activeReminders.filter(item => item.queue_id !== queueId);
+              renderReminders();
+            }, 300);
+          }, 400);
+        }
+
+        try {
+          await api(`/messages/${queueId}/sent`, { method: "POST" });
+        } catch (err) {
+          showToast("Failed to update status: " + err.message);
+          loadReminders(); // Reload to restore sync on error
+        }
+      }
+
+      // ── Action Handlers ───────────────────────────────────────────
+      window.sendWhatsApp = function(queueId) {
+        const item = activeReminders.find(r => r.queue_id === queueId);
+        if (!item) return;
+
+        const url = getWhatsAppLink(item);
+        window.open(url, "_blank");
+
+        processSent(queueId);
+        showToast(`Reminder dispatched for ${item.student_name}`);
+      };
+
+      window.markAsSent = function(queueId) {
+        const item = activeReminders.find(r => r.queue_id === queueId);
+        if (!item) return;
+
+        processSent(queueId);
+        showToast(`Marked ${item.student_name}'s message as sent`);
+      };
+
+      // Initial Load
+      loadReminders();
+
+      // Listen for Live Updates (WebSocket/SSE sync)
+      window.onLiveUpdate = (data) => {
+        if (data.type === "messages" || data.type === "payments" || data.type === "students") {
+          loadReminders();
+        }
+      };
+    </script>
+  </body>
+</html>

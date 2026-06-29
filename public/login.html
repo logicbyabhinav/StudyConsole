@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — StudyConsole</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    <style>
+      /* ── Theme tokens ─────────────────────────────────────── */
+      :root {
+        --blue:        #0969da;
+        --blue-light:  rgba(9,105,218,0.10);
+        --red:         #cf222e;
+        --red-light:   rgba(207,34,46,0.10);
+        --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+        /* light defaults */
+        --bg:           #f3f5f8;
+        --card-bg:      #ffffff;
+        --card-border:  rgba(255,255,255,0.55);
+        --card-shadow:  0 12px 40px rgba(0,0,0,0.07), 0 1px 6px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6);
+        --text:         #1f2328;
+        --text-muted:   #57606a;
+        --border:       #d0d7de;
+        --input-bg:     #f6f8fa;
+        --tab-pool:     rgba(0,0,0,0.04);
+        --tab-active:   #ffffff;
+        --tab-shadow:   0 1px 3px rgba(0,0,0,0.08);
+        --orb-a:        rgba(9,105,218,0.13);
+        --orb-b:        rgba(16,185,129,0.08);
+        --orb-c:        rgba(9,105,218,0.06);
+        --input-focus:  rgba(9,105,218,0.15);
+        --err-border:   rgba(207,34,46,0.18);
+        --subtitle:     #57606a;
+        --card-backdrop: rgba(255,255,255,0.68);
+      }
+
+      [data-theme="dark"] {
+        --bg:           #0d1117;
+        --card-bg:      #161b22;
+        --card-border:  rgba(255,255,255,0.07);
+        --card-shadow:  0 12px 40px rgba(0,0,0,0.45), 0 1px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+        --text:         #e6edf3;
+        --text-muted:   #8b949e;
+        --border:       #30363d;
+        --input-bg:     #0d1117;
+        --tab-pool:     rgba(255,255,255,0.05);
+        --tab-active:   #21262d;
+        --tab-shadow:   0 1px 3px rgba(0,0,0,0.4);
+        --orb-a:        rgba(56,139,253,0.18);
+        --orb-b:        rgba(16,185,129,0.10);
+        --orb-c:        rgba(56,139,253,0.08);
+        --input-focus:  rgba(88,166,255,0.22);
+        --err-border:   rgba(248,81,73,0.25);
+        --subtitle:     #8b949e;
+        --blue:         #58a6ff;
+        --red:          #f85149;
+        --red-light:    rgba(248,81,73,0.12);
+        --card-backdrop: rgba(22,27,34,0.72);
+      }
+
+      /* ── Transition layer — wraps everything ────────────────── */
+      html {
+        transition:
+          background-color 1.2s cubic-bezier(0.4,0,0.2,1),
+          color            1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: var(--font);
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+        background: var(--bg);
+        transition: background-color 1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+
+      /* ── Ambient orbs ───────────────────────────────────────── */
+      .orb {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(70px);
+        pointer-events: none;
+        z-index: 0;
+        transition: background 1.4s cubic-bezier(0.4,0,0.2,1),
+                    opacity    1.4s cubic-bezier(0.4,0,0.2,1);
+      }
+      .orb-1 {
+        width: 480px; height: 480px;
+        top: -120px; left: -100px;
+        background: var(--orb-a);
+        animation: drift1 18s ease-in-out infinite alternate;
+      }
+      .orb-2 {
+        width: 360px; height: 360px;
+        bottom: -80px; right: -80px;
+        background: var(--orb-b);
+        animation: drift2 22s ease-in-out infinite alternate;
+      }
+      .orb-3 {
+        width: 260px; height: 260px;
+        top: 50%; left: 55%;
+        background: var(--orb-c);
+        animation: drift3 14s ease-in-out infinite alternate;
+      }
+      @keyframes drift1 { from { transform: translate(0,0) scale(1);    } to { transform: translate(40px,30px) scale(1.08); } }
+      @keyframes drift2 { from { transform: translate(0,0) scale(1);    } to { transform: translate(-30px,-25px) scale(1.06); } }
+      @keyframes drift3 { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-44%,-55%) scale(1.1); } }
+
+      /* ── Login card ─────────────────────────────────────────── */
+      .login-container {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        max-width: 420px;
+        padding: 20px;
+      }
+
+      .login-card {
+        background: var(--card-backdrop);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid var(--card-border);
+        border-radius: 18px;
+        padding: 2.2rem 2rem;
+        box-shadow: var(--card-shadow);
+        transition:
+          background  1.2s cubic-bezier(0.4,0,0.2,1),
+          border-color 1.2s cubic-bezier(0.4,0,0.2,1),
+          box-shadow  1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+
+      /* ── Brand ──────────────────────────────────────────────── */
+      .brand-header {
+        text-align: center;
+        margin-bottom: 1.8rem;
+      }
+      .brand-title {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        background: linear-gradient(135deg, var(--blue) 0%, #10b981 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        transition: background 1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+      .brand-subtitle {
+        margin: 5px 0 0;
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--subtitle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        transition: color 1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+
+      /* ── Theme cycle indicator (subtle dots) ────────────────── */
+      .theme-dots {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+        margin-top: 10px;
+      }
+      .theme-dot {
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: var(--border);
+        transition: background 0.4s ease, transform 0.4s ease;
+      }
+      .theme-dot.active {
+        background: var(--blue);
+        transform: scale(1.4);
+      }
+
+      /* ── Tabs ───────────────────────────────────────────────── */
+      .tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        background: var(--tab-pool);
+        border-radius: 9px;
+        padding: 4px;
+        margin-bottom: 1.6rem;
+        transition: background 1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+      .tab-btn {
+        background: none; border: none;
+        padding: 9px 0; font-size: 12.5px; font-weight: 600;
+        color: var(--text-muted); border-radius: 6px;
+        cursor: pointer; transition: all 0.2s ease; outline: none;
+        font-family: var(--font);
+      }
+      .tab-btn.active {
+        background: var(--tab-active);
+        color: var(--text);
+        box-shadow: var(--tab-shadow);
+      }
+
+      /* ── Form ───────────────────────────────────────────────── */
+      .form-group {
+        margin-bottom: 1.1rem;
+        display: flex; flex-direction: column; gap: 5px;
+      }
+      .form-group label {
+        font-size: 10.5px; font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase; letter-spacing: 0.05em;
+        transition: color 1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+      .form-group input {
+        width: 100%;
+        padding: 10px 13px; font-size: 13.5px;
+        border-radius: 8px; border: 1px solid var(--border);
+        background: var(--input-bg); color: var(--text);
+        font-family: var(--font);
+        transition:
+          border-color   0.15s ease,
+          box-shadow     0.15s ease,
+          background     1.2s cubic-bezier(0.4,0,0.2,1),
+          color          1.2s cubic-bezier(0.4,0,0.2,1);
+        outline: none;
+      }
+      .form-group input:focus {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px var(--input-focus);
+      }
+
+      /* ── Error ──────────────────────────────────────────────── */
+      .error-banner {
+        background: var(--red-light);
+        border: 1px solid var(--err-border);
+        color: var(--red);
+        font-size: 12.5px; padding: 10px 12px;
+        border-radius: 8px; margin-bottom: 1.1rem;
+        display: none; line-height: 1.4;
+      }
+
+      /* ── Submit ─────────────────────────────────────────────── */
+      .submit-btn {
+        width: 100%; padding: 11px;
+        font-size: 13.5px; font-weight: 600;
+        background: var(--blue); color: white;
+        border: none; border-radius: 9px;
+        cursor: pointer; font-family: var(--font);
+        transition: opacity 0.15s, transform 0.1s, background 1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+      .submit-btn:hover   { opacity: 0.92; }
+      .submit-btn:active  { transform: scale(0.98); }
+      .submit-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+      /* ── Register link ──────────────────────────────────────── */
+      .register-wrap {
+        text-align: center; margin-top: 1.2rem;
+        transition: opacity 0.2s ease;
+      }
+      .register-wrap p {
+        margin: 0; font-size: 12.5px; color: var(--text-muted);
+        transition: color 1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+      .register-wrap a {
+        color: var(--blue); font-weight: 600;
+        text-decoration: none; transition: opacity 0.15s, color 1.2s cubic-bezier(0.4,0,0.2,1);
+      }
+      .register-wrap a:hover { opacity: 0.75; }
+    </style>
+  </head>
+  <body>
+
+    <!-- Ambient orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="login-container">
+      <div class="login-card">
+
+        <div class="brand-header">
+          <h1 class="brand-title">StudyConsole</h1>
+          <p class="brand-subtitle">Smart Study Center Console</p>
+          <!-- Cycle indicator -->
+          <div class="theme-dots">
+            <div class="theme-dot active" id="dot0"></div>
+            <div class="theme-dot"        id="dot1"></div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" id="tab-student" onclick="switchTab('student')">Student Desk</button>
+          <button class="tab-btn"        id="tab-admin"   onclick="switchTab('admin')">Admin Access</button>
+        </div>
+
+        <div class="error-banner" id="errorBanner"></div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <input type="hidden" id="userType" value="student" />
+
+          <div class="form-group">
+            <label id="usernameLabel" for="username">Student ID</label>
+            <input type="text" id="username"
+              placeholder="e.g. STC-0006 or 6"
+              required autocomplete="username" />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password"
+              placeholder="Enter your password"
+              required autocomplete="current-password" />
+          </div>
+
+          <button type="submit" class="submit-btn" id="submitBtn">Sign In</button>
+        </form>
+      </div>
+
+      <div class="register-wrap" id="registerLinkWrap">
+        <p>New student? &nbsp;
+          <a href="register.html">Apply for admission &rarr;</a>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // ── Theme cycle — independent of localStorage ────────────
+      // Never read or write the user's saved theme preference.
+      // The login page owns its own cycle: light → dark → light…
+      const THEMES  = ['light', 'dark'];
+      const DOTS    = [document.getElementById('dot0'), document.getElementById('dot1')];
+      let themeIdx  = 0;   // start on light always
+
+      function applyTheme(idx) {
+        document.documentElement.setAttribute('data-theme', THEMES[idx]);
+        DOTS.forEach((d, i) => d.classList.toggle('active', i === idx));
+      }
+
+      // Cycle every 10 s
+      setInterval(() => {
+        themeIdx = (themeIdx + 1) % THEMES.length;
+        applyTheme(themeIdx);
+      }, 10000);
+
+      // Initialise (always light on load)
+      applyTheme(0);
+
+      // ── Tab switching ────────────────────────────────────────
+      function switchTab(type) {
+        document.getElementById('tab-student').classList.toggle('active', type === 'student');
+        document.getElementById('tab-admin').classList.toggle('active',   type === 'admin');
+        document.getElementById('userType').value = type;
+        document.getElementById('errorBanner').style.display = 'none';
+
+        const lbl = document.getElementById('usernameLabel');
+        const inp = document.getElementById('username');
+        const reg = document.getElementById('registerLinkWrap');
+
+        if (type === 'student') {
+          lbl.innerText = 'Student ID';
+          inp.placeholder = 'e.g. STC-0006 or 6';
+          reg.style.opacity = '1'; reg.style.pointerEvents = 'auto';
+        } else {
+          lbl.innerText = 'Admin Username';
+          inp.placeholder = 'e.g. admin';
+          reg.style.opacity = '0'; reg.style.pointerEvents = 'none';
+        }
+        inp.value = '';
+      }
+
+      // ── Login handler ────────────────────────────────────────
+      async function handleLogin(e) {
+        e.preventDefault();
+        const username  = document.getElementById('username').value;
+        const password  = document.getElementById('password').value;
+        const userType  = document.getElementById('userType').value;
+        const errBanner = document.getElementById('errorBanner');
+        const btn       = document.getElementById('submitBtn');
+
+        errBanner.style.display = 'none';
+        btn.disabled = true; btn.innerText = 'Signing in…';
+
+        try {
+          const res  = await fetch('/api/student/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, user_type: userType })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Login failed');
+
+          sessionStorage.setItem('user_type', data.user_type);
+
+          if (data.user_type === 'admin') {
+            window.location.href = '/dashboard.html';
+          } else {
+            window.location.href = data.temp_password
+              ? '/student-portal.html?reset=true'
+              : '/student-portal.html';
+          }
+        } catch (err) {
+          errBanner.innerText = err.message;
+          errBanner.style.display = 'block';
+          btn.disabled = false; btn.innerText = 'Sign In';
+        }
+      }
+    </script>
+  </body>
+</html>

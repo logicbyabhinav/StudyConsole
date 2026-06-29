@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Reallocations — StudySpace</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .reallocations-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .reallocations-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .search-container {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+  .autocomplete-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+  .autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+  .autocomplete-item:hover {
+    background: var(--bg);
+  }
+  .autocomplete-item:last-child {
+    border-bottom: none;
+  }
+  .request-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .request-card {
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .request-card:hover {
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .request-card.active {
+    border-color: var(--green);
+    background: rgba(16, 185, 129, 0.04);
+  }
+  .request-meta {
+    font-size: 10px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .request-title {
+    font-weight: 600;
+    font-size: 13.5px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .request-details {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .section-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    margin-top: 14px;
+  }
+  .section-label:first-child {
+    margin-top: 0;
+  }
+  .proposal-box {
+    background: rgba(16, 185, 129, 0.06);
+    border: 1px dashed var(--green);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .proposal-text {
+    font-size: 12.5px;
+    color: var(--text);
+  }
+  .warning-box {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px dashed var(--red);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    color: var(--text);
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+  .current-allocation-pill {
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .blocks-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .block-form-card {
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .time-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+<div id="shell"></div>
+<script src="js/common.js"></script>
+<script>
+  renderShell('reallocations', 'Seat & Timing Reallocations', 'Process reallocation requests from students or execute manual changes');
+
+  const container = document.getElementById('page-content');
+  container.innerHTML = `
+    <div class="reallocations-grid">
+      <!-- Left Column: Search & Requests -->
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        
+        <!-- Search Card -->
+        <div class="card" style="padding: 1.25rem;">
+          <div class="section-label">Select Active Student for Manual Reallocation</div>
+          <div class="search-container">
+            <input type="text" id="studentSearch" placeholder="Search by student name, phone, or Aadhaar..." autocomplete="off" style="width:100%; box-sizing:border-box; padding: 10px 14px; font-size:13px; border-radius:6px; border:1px solid var(--border);">
+            <div id="autocompleteResults" class="autocomplete-results" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Pending Requests Card -->
+        <div class="card" style="padding: 1.25rem;">
+          <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Pending Student Requests</span>
+            <span class="badge" id="requestsCountBadge" style="display:none; background:var(--green); color:white;">0</span>
+          </div>
+          <div id="requestsContainer" class="request-list" style="margin-top: 10px;">
+            <div style="text-align:center; padding: 20px 10px; color: var(--text-faint); font-size:12.5px; font-family:var(--font-mono);">
+              No pending seat reallocation requests.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Reallocation Console -->
+      <div id="consoleContainer">
+        <!-- Placeholder Console -->
+        <div class="card placeholder-card" style="padding: 3rem 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; border: 2px dashed var(--border-soft); height: 100%; box-sizing: border-box;">
+          <div style="color: var(--text-faint);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <div style="font-size: 14px; font-weight: 500; color: var(--text-muted); text-align: center;">
+            Select a pending request from the list or search for an active student to open the Reallocation Console.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Application Caches
+  let selectedStudentData = null; // Full student object
+  let blockProposals = []; // Cached block proposals
+  let activeFeePlans = []; // Cached active fee structures
+
+  function getLocalDateString() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function getFirstDayOfNextMonth() {
+    const d = new Date();
+    const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const year = nextMonth.getFullYear();
+    const month = String(nextMonth.getMonth() + 1).padStart(2, '0');
+    const day = String(nextMonth.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function onBillingRuleChange() {
+    const rule = document.querySelector('input[name="billing_rule"]:checked').value;
+    const dateInput = document.getElementById('f_effective_date');
+    if (dateInput) {
+      if (rule === 'next_month') {
+        dateInput.value = getFirstDayOfNextMonth();
+      } else {
+        dateInput.value = getLocalDateString();
+      }
+      checkTimingProposals();
+    }
+  }
+
+  // 1. Initial Load & Autocomplete setup
+  async function loadData() {
+    try {
+      const [studentsList, requestsList, activeFeesList] = await Promise.all([
+        api('/students'),
+        api('/reallocations'),
+        api('/fees/active')
+      ]);
+
+      activeStudents = studentsList.filter(s => s.status === 'Active');
+      pendingRequests = requestsList;
+      activeFeePlans = activeFeesList;
+
+      renderRequests();
+
+      const params = new URLSearchParams(window.location.search);
+      const reqIdParam = params.get('request_id');
+      if (reqIdParam) {
+        selectRequest(parseInt(reqIdParam, 10));
+      }
+    } catch (err) {
+      showToast("Error loading data: " + err.message);
+    }
+  }
+
+  // Define activeStudents and pendingRequests at module level
+  let activeStudents = [];
+  let pendingRequests = [];
+  let currentSelection = null; // { type: 'manual'|'request', studentId, requestId (if request) }
+
+  // 2. Render Pending Requests
+  function renderRequests() {
+    const container = document.getElementById('requestsContainer');
+    const badge = document.getElementById('requestsCountBadge');
+
+    badge.innerText = pendingRequests.length;
+    badge.style.display = pendingRequests.length > 0 ? 'inline-block' : 'none';
+
+    if (pendingRequests.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center; padding: 20px 10px; color: var(--text-faint); font-size:12.5px; font-family:var(--font-mono);">
+          No pending seat reallocation requests.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = pendingRequests.map(r => {
+      const activeClass = currentSelection && currentSelection.type === 'request' && currentSelection.requestId === r.request_id ? 'active' : '';
+      const dateStr = new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      
+      return `
+        <div class="request-card ${activeClass}" onclick="selectRequest(${r.request_id})">
+          <div class="request-meta">${dateStr} &middot; STC-${String(r.student_id).padStart(4, '0')}</div>
+          <div class="request-title">${r.student_name}</div>
+          <div class="request-details">
+            <b>Current:</b> ${r.current_seats} (${r.current_shifts})<br>
+            <b>Requested:</b> Seat ${r.preferred_seat} (${r.preferred_start_time} - ${r.preferred_end_time})<br>
+            ${r.reason ? `<b>Reason:</b> "${r.reason}"` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 3. Search Autocomplete Logic
+  const searchInput = document.getElementById('studentSearch');
+  const resultsDiv = document.getElementById('autocompleteResults');
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) {
+      resultsDiv.style.display = 'none';
+      return;
+    }
+
+    const matches = activeStudents.filter(s => 
+      s.name.toLowerCase().includes(q) || 
+      s.phone.includes(q) || 
+      (s.aadhaar_number && s.aadhaar_number.includes(q))
+    ).slice(0, 5);
+
+    if (matches.length === 0) {
+      resultsDiv.innerHTML = `<div style="padding: 10px 14px; color:var(--text-faint); font-size:12.5px;">No active students found.</div>`;
+    } else {
+      resultsDiv.innerHTML = matches.map(s => {
+        const seatNos = s.allocations.map(a => a.seat_number).join(', ') || 'Unallocated';
+        return `
+          <div class="autocomplete-item" onclick="selectManualStudent(${s.student_id})">
+            <div>
+              <div style="font-weight:600; color:var(--text);">${s.name}</div>
+              <div style="font-size:11px; color:var(--text-faint); margin-top:2px;">Phone: ${s.phone} &middot; ID: STC-${String(s.student_id).padStart(4, '0')}</div>
+            </div>
+            <span class="badge" style="background:var(--bg); border:1px solid var(--border-soft); font-size:11px; color:var(--text-muted);">Seat ${seatNos}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    resultsDiv.style.display = 'block';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (e.target !== searchInput && e.target !== resultsDiv) {
+      resultsDiv.style.display = 'none';
+    }
+  });
+
+  // 4. Request Selection Handler
+  function selectRequest(reqId) {
+    const req = pendingRequests.find(r => r.request_id === reqId);
+    if (!req) return;
+
+    currentSelection = {
+      type: 'request',
+      studentId: req.student_id,
+      requestId: reqId
+    };
+
+    selectedStudentData = activeStudents.find(s => s.student_id === req.student_id);
+    renderRequests();
+    renderConsole(req);
+  }
+
+  // 5. Manual Selection Handler
+  function selectManualStudent(studentId) {
+    selectedStudentData = activeStudents.find(s => s.student_id === studentId);
+    if (!selectedStudentData) return;
+
+    currentSelection = {
+      type: 'manual',
+      studentId: studentId
+    };
+
+    searchInput.value = '';
+    resultsDiv.style.display = 'none';
+    renderRequests();
+    renderConsole();
+  }
+
+  // 6. Render Console UI
+  function renderConsole(prefilledRequest = null) {
+    const container = document.getElementById('consoleContainer');
+    if (!selectedStudentData) {
+      container.innerHTML = `
+        <div class="card placeholder-card" style="padding: 3rem 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; border: 2px dashed var(--border-soft); height: 100%; box-sizing: border-box;">
+          <div style="color: var(--text-faint);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <div style="font-size: 14px; font-weight: 500; color: var(--text-muted); text-align: center;">
+            Select a pending request from the list or search for an active student to open the Reallocation Console.
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const currentSeats = selectedStudentData.allocations.map(a => `Seat ${a.seat_number} (${a.start_time} - ${a.end_time})`).join(', ') || 'No active seat allocation';
+    const isRequest = !!prefilledRequest;
+    
+    // Default values
+    let timingBlocks = selectedStudentData.allocations.map(a => ({
+      start_time: a.start_time,
+      end_time: a.end_time,
+      seat_number: a.seat_number
+    }));
+
+    if (timingBlocks.length === 0) {
+      timingBlocks = [{ start_time: '09:00', end_time: '15:00', seat_number: '' }];
+    }
+
+    if (isRequest) {
+      // Prefill with requested block
+      timingBlocks = [{
+        start_time: prefilledRequest.preferred_start_time,
+        end_time: prefilledRequest.preferred_end_time,
+        seat_number: prefilledRequest.preferred_seat
+      }];
+    }
+
+    container.innerHTML = `
+      <div class="card" style="padding: 1.5rem; display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:start; border-bottom:1px solid var(--border-soft); padding-bottom:12px;">
+          <div>
+            <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--text);">${selectedStudentData.name}</h3>
+            <div style="font-size:11.5px; color:var(--text-faint); margin-top:2px;">ID: STC-${String(selectedStudentData.student_id).padStart(4, '0')} &middot; Gender: ${selectedStudentData.gender}</div>
+          </div>
+          <span class="badge badge-green">Active</span>
+        </div>
+
+        <div>
+          <div class="section-label">Current Configuration</div>
+          <div class="current-allocation-pill">
+            <span>${currentSeats}</span>
+            <span style="font-family:var(--font-mono); font-size:11px;">Plan: ${selectedStudentData.duration_hours} hrs/day</span>
+          </div>
+        </div>
+
+        <form id="reallocationForm" onsubmit="submitReallocation(event)" style="display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Shift Timing & Seat Settings</span>
+              <span style="font-size:11px; color:var(--blue); cursor:pointer; font-weight:600;" id="btnAddBlock" onclick="addTimeBlock()">+ Add Time Block</span>
+            </div>
+            <div id="blocksContainer" class="blocks-container">
+              <!-- Dynamically rendered blocks -->
+            </div>
+          </div>
+
+          <!-- Plan Summary Slot -->
+          <div id="planSummarySlot"></div>
+
+          <!-- Effective Date Selection -->
+          <div>
+            <div class="section-label">Effective Date of Reallocation</div>
+            <input type="date" id="f_effective_date" onchange="checkTimingProposals()" required style="width:100%;">
+          </div>
+
+          <!-- Billing adjustments -->
+          <div style="background:var(--bg); border:1px solid var(--border-soft); border-radius:8px; padding:12px 14px;">
+            <div class="section-label" style="margin-top:0;">Billing / Payment Plan Adjustments</div>
+            <div style="display:flex; flex-direction:column; gap:8px; font-size:12.5px;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:500;">
+                <input type="radio" name="billing_rule" value="next_month" checked onchange="onBillingRuleChange()">
+                Apply starting next calendar month (No immediate dues adjustment)
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:500; margin-top:4px;">
+                <input type="radio" name="billing_rule" value="prorated" onchange="onBillingRuleChange()">
+                Mid-Month Pro-rata: Adjust current month's bill immediately
+              </label>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--border-soft); padding-top:16px; margin-top:6px;">
+            <button type="button" class="btn btn-secondary" onclick="clearConsole()">Cancel</button>
+            ${isRequest ? `
+              <button type="button" class="btn btn-danger" onclick="rejectRequest(${prefilledRequest.request_id})" style="background-color:#dc2626; color:white;">Reject Request</button>
+              <button type="submit" class="btn btn-primary">Approve Reallocation</button>
+            ` : `
+              <button type="submit" class="btn btn-primary">Execute Reallocations</button>
+            `}
+          </div>
+        </form>
+      </div>
+    `;
+
+    renderBlockInputs(timingBlocks);
+    document.getElementById('f_effective_date').value = getFirstDayOfNextMonth();
+    checkTimingProposals();
+  }
+
+  // 7. Render Block Inputs
+  function renderBlockInputs(blocksData) {
+    const container = document.getElementById('blocksContainer');
+    const addBlockBtn = document.getElementById('btnAddBlock');
+
+    if (blocksData.length < 4) {
+      addBlockBtn.style.display = 'inline-block';
+    } else {
+      addBlockBtn.style.display = 'none';
+    }
+
+    container.innerHTML = blocksData.map((b, idx) => `
+      <div class="block-form-card" data-idx="${idx}" style="margin-bottom: 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span style="font-size:11px; font-weight:700; color:var(--text-faint);">TIMING BLOCK ${idx + 1}</span>
+          ${idx > 0 ? `<span style="font-size:11px; color:var(--red); cursor:pointer; font-weight:500;" onclick="removeTimeBlock(${idx})">Remove Block</span>` : ''}
+        </div>
+        <div class="time-inputs">
+          <div>
+            <label style="font-size:10px; font-weight:600; margin-bottom:4px; display:block; color:var(--text-muted);">START TIME</label>
+            <input type="time" class="f_start" value="${b.start_time}" onchange="checkTimingProposals()" required style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:10px; font-weight:600; margin-bottom:4px; display:block; color:var(--text-muted);">END TIME</label>
+            <input type="time" class="f_end" value="${b.end_time}" onchange="checkTimingProposals()" required style="width:100%;">
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:10px; font-weight:600; margin-bottom:4px; display:block; color:var(--text-muted);">SEAT NUMBER</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" class="f_seat" value="${b.seat_number}" placeholder="e.g. 12" style="width:100%; box-sizing:border-box;">
+            <button type="button" class="btn" style="padding: 4px 10px; font-size:11.5px; background:var(--blue); color:white;" onclick="checkSeatCustom(${idx})">Check Seat</button>
+            <button type="button" class="btn" style="padding: 4px 10px; font-size:11.5px;" onclick="applyProposedSeat(${idx})">Proposed</button>
+          </div>
+        </div>
+        <div id="allocatorProposalSlot_${idx}"></div>
+        <div id="safetyWarningSlot_${idx}"></div>
+      </div>
+    `).join('');
+  }
+
+  function addTimeBlock() {
+    const blocksData = getBlocksData();
+    if (blocksData.length >= 4) {
+      showToast("Maximum of 4 timing blocks allowed.");
+      return;
+    }
+    blocksData.push({ start_time: '09:00', end_time: '13:00', seat_number: '' });
+    renderBlockInputs(blocksData);
+    checkTimingProposals();
+  }
+
+  function removeTimeBlock(idx) {
+    const blocksData = getBlocksData();
+    blocksData.splice(idx, 1);
+    renderBlockInputs(blocksData);
+    checkTimingProposals();
+  }
+
+  // 8. Extract form inputs helper
+  function getBlocksData() {
+    const cards = document.querySelectorAll('.block-form-card');
+    const data = [];
+    cards.forEach(card => {
+      data.push({
+        start_time: card.querySelector('.f_start').value,
+        end_time: card.querySelector('.f_end').value,
+        seat_number: card.querySelector('.f_seat').value.trim()
+      });
+    });
+    return data;
+  }
+
+  function calculateBlockDuration(start, end) {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff <= 0) diff += 1440; // overnight wrap
+    return diff / 60;
+  }
+
+  function updatePlanSummary() {
+    const blocks = getBlocksData();
+    let totalHours = 0;
+    blocks.forEach(b => {
+      if (b.start_time && b.end_time) {
+        totalHours += calculateBlockDuration(b.start_time, b.end_time);
+      }
+    });
+
+    const summarySlot = document.getElementById('planSummarySlot');
+    if (!summarySlot) return;
+
+    if (totalHours === 0) {
+      summarySlot.innerHTML = '';
+      return;
+    }
+
+    const matchedFee = activeFeePlans.find(plan => Math.abs(plan.hours_per_day - totalHours) < 0.01);
+
+    if (matchedFee) {
+      summarySlot.innerHTML = `
+        <div style="background:var(--bg); border:1px solid var(--border-soft); border-radius:8px; padding:12px 14px; margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:700; color:var(--text-faint); text-transform:uppercase; margin-bottom:6px;">Plan Summary</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span style="font-size:14px; font-weight:600; color:var(--text);">${totalHours.toFixed(1).replace('.0', '')} hours/day</span>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Active fee slab found</div>
+            </div>
+            <span style="font-size:16px; font-weight:700; color:var(--green);">₹${matchedFee.monthly_fee}/month</span>
+          </div>
+        </div>
+      `;
+    } else {
+      summarySlot.innerHTML = `
+        <div style="background:rgba(239, 68, 68, 0.06); border:1px dashed var(--red); border-radius:8px; padding:12px 14px; margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:700; color:var(--red); text-transform:uppercase; margin-bottom:6px;">Plan Summary Warning</div>
+          <div style="font-size:13px; color:var(--text); line-height:1.4;">
+            Total configured duration: <b>${totalHours.toFixed(1).replace('.0', '')} hours/day</b>.<br>
+            <span style="color:var(--red); font-weight:600;">⚠️ No active fee plan exists for ${totalHours.toFixed(1).replace('.0', '')} hours.</span> Create one in settings first.
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // 9. Call backend proposer and check rules
+  async function checkTimingProposals() {
+    const blocks = getBlocksData();
+    const dateVal = document.getElementById('f_effective_date')?.value || '';
+    
+    // Clear previous proposals
+    blockProposals = [];
+
+    for (let idx = 0; idx < blocks.length; idx++) {
+      const block = blocks[idx];
+      const proposalSlot = document.getElementById(`allocatorProposalSlot_${idx}`);
+      if (!proposalSlot) continue;
+
+      if (!block.start_time || !block.end_time) {
+        proposalSlot.innerHTML = '';
+        continue;
+      }
+
+      try {
+        const propData = await api(`/seats/propose?gender=${selectedStudentData.gender}&start=${block.start_time}&end=${block.end_time}&date=${dateVal}&excludeStudentId=${selectedStudentData.student_id}`);
+        blockProposals[idx] = propData;
+
+        if (propData.proposed_seat) {
+          proposalSlot.innerHTML = `
+            <div class="proposal-box" style="margin-top:8px; margin-bottom:8px;">
+              <div class="proposal-text">
+                ✨ <b>Scorer proposal:</b> Seat <b>${propData.proposed_seat}</b> recommended for shift timings.
+                <div style="font-size:10.5px; color:var(--text-faint); margin-top:2px;">Reason: ${propData.reason}</div>
+              </div>
+            </div>
+          `;
+        } else {
+          proposalSlot.innerHTML = `
+            <div class="proposal-box" style="border-color:var(--orange); background:rgba(245,158,11,0.06); margin-top:8px; margin-bottom:8px;">
+              <div class="proposal-text" style="color:var(--orange);">
+                ⚠️ No vacant seats fit normal segregation/safety guidelines for this shift. Re-check timing overlap.
+              </div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        proposalSlot.innerHTML = `
+          <div class="proposal-box" style="border-color:var(--red); background:rgba(239,68,68,0.06); margin-top:8px; margin-bottom:8px;">
+            <div class="proposal-text" style="color:var(--red);">
+              Failed to fetch recommended seat proposal.
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    updatePlanSummary();
+  }
+
+  // Apply proposed seat to input
+  function applyProposedSeat(idx) {
+    const prop = blockProposals[idx];
+    if (!prop || !prop.proposed_seat) {
+      showToast("No proposed seat recommended for this timing.");
+      return;
+    }
+    const cards = document.querySelectorAll('.block-form-card');
+    const card = cards[idx];
+    if (card) {
+      const seatInput = card.querySelector('.f_seat');
+      if (seatInput) {
+        seatInput.value = prop.proposed_seat;
+        checkSeatCustom(idx);
+      }
+    }
+  }
+
+  // Validate custom seat selection with rich visual alerts
+  async function checkSeatCustom(idx) {
+    const blocks = getBlocksData();
+    const block = blocks[idx];
+    const warningSlot = document.getElementById(`safetyWarningSlot_${idx}`);
+    if (!warningSlot) return;
+
+    if (!block.seat_number) {
+      warningSlot.innerHTML = `
+        <div class="warning-box" style="border-color:var(--red); background:rgba(239,68,68,0.06); color:var(--red); margin-top:8px; margin-bottom:8px;">
+          ⚠️ Please enter a seat number to check.
+        </div>
+      `;
+      return;
+    }
+
+    try {
+      const dateVal = document.getElementById('f_effective_date')?.value || '';
+      const res = await api(`/seats/validate-override`, {
+        method: 'POST',
+        body: JSON.stringify({
+          seat_number: block.seat_number,
+          gender: selectedStudentData.gender,
+          start: block.start_time,
+          end: block.end_time,
+          date: dateVal,
+          student_id: selectedStudentData.student_id
+        })
+      });
+
+      if (!res.valid) {
+        if (res.occupied) {
+          const byWhom = res.occupiedBy || 'another student';
+          warningSlot.innerHTML = `
+            <div class="warning-box" style="border-color:var(--red); background:rgba(239,68,68,0.06); color:var(--red); margin-top:8px; margin-bottom:8px;">
+              ❌ <b>Seat Unavailable:</b> Seat ${block.seat_number} is already occupied by ${byWhom} during ${block.start_time}–${block.end_time}. Please choose a different seat or adjust the timing.
+            </div>
+          `;
+        } else {
+          warningSlot.innerHTML = `
+            <div class="warning-box" style="border-color:var(--orange); background:rgba(245,158,11,0.06); color:var(--orange); margin-top:8px; margin-bottom:8px;">
+              ⚠️ <b>Safety Adjacency Violation:</b> Seat ${block.seat_number} violates guidelines:<br>
+              • ${res.reason}<br>
+              <div style="margin-top: 8px;">
+                <label style="font-weight: 600; font-size: 11px; margin-bottom: 4px; display: block; color: var(--text);">ADMIN OVERRIDE REASON *</label>
+                <textarea class="override_reason" data-idx="${idx}" rows="2" required placeholder="Provide reason (e.g. Student requested to sit next to relative / spouse)..." style="width: 100%; box-sizing: border-box; font-size: 12.5px; border-radius: 4px; border:1px solid var(--border);"></textarea>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        warningSlot.innerHTML = `
+          <div class="proposal-box" style="border-color:var(--green); background:rgba(16,185,129,0.06); color:var(--green); margin-top:8px; margin-bottom:8px;">
+            <div class="proposal-text" style="color:var(--green); font-weight: 500;">
+              ✅ <b>Seat Verified:</b> Seat ${block.seat_number} is vacant and complies with segregation guidelines for this date.
+            </div>
+          </div>
+        `;
+        showToast(`Seat ${block.seat_number} is available and safe!`);
+      }
+    } catch (err) {
+      warningSlot.innerHTML = `
+        <div class="warning-box" style="border-color:var(--red); background:rgba(239,68,68,0.06); color:var(--red); margin-top:8px; margin-bottom:8px;">
+          ⚠️ <b>Verification Failed:</b> ${err.message}
+        </div>
+      `;
+    }
+  }
+
+  // 10. Reallocation submission
+  async function submitReallocation(e) {
+    e.preventDefault();
+
+    const blocks = getBlocksData();
+
+    // Basic timing block verification
+    const totalHours = blocks.reduce((sum, b) => {
+      const [sh, sm] = b.start_time.split(':').map(Number);
+      const [eh, em] = b.end_time.split(':').map(Number);
+      let diff = (eh * 60 + em) - (sh * 60 + sm);
+      if (diff <= 0) diff += 1440; // overnight wrap
+      return sum + (diff / 60);
+    }, 0);
+
+    if (totalHours < 4 || totalHours > 24) {
+      await customAlert("Invalid Duration", `The total shift duration is ${totalHours.toFixed(1).replace('.0', '')} hrs. It must be between 4 and 24 hours.`);
+      return;
+    }
+
+    const matchedFee = activeFeePlans.find(plan => Math.abs(plan.hours_per_day - totalHours) < 0.01);
+    if (!matchedFee) {
+      await customAlert("Invalid Plan Duration", `No active fee plan exists for ${totalHours.toFixed(1).replace('.0', '')} hours/day. Please configure one in settings or adjust timings.`);
+      return;
+    }
+
+    // Check seat numbers are specified
+    for (let i = 0; i < blocks.length; i++) {
+      if (!blocks[i].seat_number) {
+        await customAlert("Seat Required", `Please specify a seat number for Time Block ${i + 1}.`);
+        return;
+      }
+    }
+
+    // Check overlapping blocks
+    for (let i = 0; i < blocks.length; i++) {
+      for (let j = i + 1; j < blocks.length; j++) {
+        const [sh1, sm1] = blocks[i].start_time.split(':').map(Number);
+        const [eh1, em1] = blocks[i].end_time.split(':').map(Number);
+        const [sh2, sm2] = blocks[j].start_time.split(':').map(Number);
+        const [eh2, em2] = blocks[j].end_time.split(':').map(Number);
+
+        const start1 = sh1 * 60 + sm1;
+        let end1 = eh1 * 60 + em1;
+        if (end1 <= start1) end1 += 1440;
+
+        const start2 = sh2 * 60 + sm2;
+        let end2 = eh2 * 60 + em2;
+        if (end2 <= start2) end2 += 1440;
+
+        // Check daily overlap across 24h cycle
+        let overlap = false;
+        for (const shift of [-1440, 0, 1440]) {
+          if (start1 < end2 + shift && start2 + shift < end1) {
+            overlap = true;
+          }
+        }
+        if (overlap) {
+          await customAlert("Timing Overlap", `Time Block ${i + 1} and Time Block ${j + 1} overlap. Adjust the timing slots.`);
+          return;
+        }
+      }
+    }
+
+    const rule = document.querySelector('input[name="billing_rule"]:checked').value;
+    const overrideTextareas = document.querySelectorAll('.override_reason');
+    let overrideReason = null;
+    let missingReason = false;
+    const reasons = [];
+    overrideTextareas.forEach(ta => {
+      const val = ta.value.trim();
+      const idx = ta.getAttribute('data-idx');
+      if (!val) {
+        missingReason = true;
+      } else {
+        reasons.push(`Block ${Number(idx)+1}: ${val}`);
+      }
+    });
+
+    if (missingReason) {
+      await customAlert("Reason Required", "Please provide a valid override reason to bypass the safety validation check.");
+      return;
+    }
+    if (reasons.length > 0) {
+      overrideReason = reasons.join(' | ');
+    }
+
+    const payload = {
+      student_id: selectedStudentData.student_id,
+      blocks: blocks,
+      billing_rule: rule,
+      effective_date: document.getElementById('f_effective_date').value,
+      override_reason: overrideReason,
+      admin_name: "Admin"
+    };
+
+    const isRequest = currentSelection && currentSelection.type === 'request';
+    const actionUrl = isRequest 
+      ? `/reallocations/${currentSelection.requestId}/approve` 
+      : `/reallocations/manual`;
+
+    try {
+      if (await customConfirm("Confirm Reallocation", `Are you sure you want to execute seat/shift timing changes for ${selectedStudentData.name}?`)) {
+        await api(actionUrl, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        showToast("Seat reallocation completed successfully!");
+        clearConsole();
+        loadData();
+      }
+    } catch (err) {
+      await customAlert("Reallocation Failed", err.message);
+    }
+  }
+
+  // 11. Request Rejection Handler
+  async function rejectRequest(reqId) {
+    const reason = await customPrompt("Reject Reallocation", "Input rejection reason to notify the student:", "e.g. Opposing gender segregation limits / Timing overlaps occupied seats");
+    if (reason === null) return; // cancelled
+
+    try {
+      await api(`/reallocations/${reqId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ rejection_reason: reason })
+      });
+
+      showToast("Reallocation request rejected successfully.");
+      clearConsole();
+      loadData();
+    } catch (err) {
+      await customAlert("Action Failed", err.message);
+    }
+  }
+
+  // 12. Clear Console
+  function clearConsole() {
+    currentSelection = null;
+    selectedStudentData = null;
+    resolvedProposal = null;
+    renderRequests();
+    renderConsole();
+  }
+
+  // Startup Init
+  loadData();
+</script>
+</body>
+</html>

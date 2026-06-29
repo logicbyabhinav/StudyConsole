@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Attendance — StudySpace</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .attendance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .attendance-stats {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .stat-pill.present { background: #d1f7d6; color: #166534; border: 1px solid #86efac; }
+  .stat-pill.expected { background: #f0f6ff; color: #1d4ed8; border: 1px solid #93c5fd; }
+  .attendance-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toggle-pill-group {
+    display: flex;
+    background: var(--surface-2, #f6f8fa);
+    border: 1px solid var(--border, #e1e4e6);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .toggle-pill-group button {
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-2, #586069);
+    transition: background 0.15s, color 0.15s;
+  }
+  .toggle-pill-group button.active {
+    background: var(--accent, #0969da);
+    color: #fff;
+  }
+  .attendance-table-wrap {
+    overflow-x: auto;
+  }
+  .attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .attendance-table th {
+    text-align: center;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-2, #586069);
+    border-bottom: 1px solid var(--border, #e1e4e6);
+    white-space: nowrap;
+  }
+  .attendance-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border, #e1e4e6);
+    color: var(--text-1, #24292e);
+    vertical-align: middle;
+    text-align: center;
+  }
+  .attendance-table tr:last-child td { border-bottom: none; }
+  .attendance-table tr:hover td { background: var(--surface-2, #f6f8fa); }
+  .student-id-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--surface-2, #f6f8fa);
+    border: 1px solid var(--border, #e1e4e6);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--text-2, #586069);
+  }
+  .login-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-2, #586069);
+  }
+  .btn-notify {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid #e36209;
+    background: transparent;
+    color: #e36209;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .btn-notify:hover:not(:disabled) { background: #fff8f0; }
+  .btn-notify:disabled { opacity: 0.45; cursor: default; border-color: var(--border, #e1e4e6); color: var(--text-2, #586069); }
+  .btn-notify.notified { border-color: #2ea043; color: #2ea043; background: #d1f7d6; }
+  .empty-state {
+    text-align: center;
+    padding: 56px 24px;
+    color: var(--text-2, #586069);
+    font-size: 14px;
+  }
+  .empty-state .emoji { font-size: 36px; margin-bottom: 12px; }
+  .search-input {
+    padding: 7px 12px;
+    border: 1px solid var(--border, #e1e4e6);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--surface-1, #fff);
+    color: var(--text-1, #24292e);
+    min-width: 200px;
+  }
+  .date-input {
+    padding: 7px 12px;
+    border: 1px solid var(--border, #e1e4e6);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--surface-1, #fff);
+    color: var(--text-1, #24292e);
+  }
+  .loading-row td {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-2, #586069);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div id="shell"></div>
+<script src="js/common.js"></script>
+<script>
+renderShell('attendance', 'Attendance', 'track daily student presence');
+
+const content = document.getElementById('page-content');
+content.innerHTML = `
+  <div class="card" style="padding: 20px 24px;">
+    <div class="attendance-header">
+      <div class="attendance-stats">
+        <span id="statPresent" class="stat-pill present">– present</span>
+        <span style="color: var(--text-3, #9aa3af); font-size: 13px;">/</span>
+        <span id="statExpected" class="stat-pill expected">– expected</span>
+        <span id="statDate" style="font-size: 12px; color: var(--text-2, #586069);"></span>
+      </div>
+      <div class="attendance-controls">
+        <input type="date" id="dateFilter" class="date-input" />
+        <input type="text" id="searchFilter" class="search-input" placeholder="Search name or ID…" />
+        <div class="toggle-pill-group">
+          <button id="btnPresent" class="active" onclick="switchView('present')">Present</button>
+          <button id="btnAbsent" onclick="switchView('absent')">Absent</button>
+        </div>
+      </div>
+    </div>
+    <div class="attendance-table-wrap">
+      <table class="attendance-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>ID</th>
+            <th>Seat</th>
+            <th>Shift</th>
+            <th id="colLoginHead">Logged in at</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceBody">
+          <tr class="loading-row"><td colspan="5">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+`;
+
+// ── State ──────────────────────────────────────────────────────────────────
+let currentView = 'present';
+let currentDate = new Date().toISOString().slice(0, 10);
+let notifiedSet = new Set(); // track notified student IDs per session
+
+// ── Date filter ────────────────────────────────────────────────────────────
+const dateInput = document.getElementById('dateFilter');
+dateInput.value = currentDate;
+dateInput.max = currentDate;
+dateInput.addEventListener('change', () => {
+  // Use valueAsDate to avoid locale-dependent string formats entirely
+  if (dateInput.valueAsDate) {
+    const d = dateInput.valueAsDate;
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    currentDate = `${y}-${m}-${day}`;
+  }
+  loadStats();
+  loadTable();
+});
+
+// ── Search filter ──────────────────────────────────────────────────────────
+document.getElementById('searchFilter').addEventListener('input', filterTable);
+
+// ── View switch ────────────────────────────────────────────────────────────
+function switchView(view) {
+  currentView = view;
+  document.getElementById('btnPresent').classList.toggle('active', view === 'present');
+  document.getElementById('btnAbsent').classList.toggle('active', view === 'absent');
+  document.getElementById('colLoginHead').textContent = view === 'present' ? 'Logged in at' : 'Action';
+  document.getElementById('searchFilter').value = '';
+  loadTable();
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await fetch(`/api/admin/attendance/stats?date=${currentDate}`);
+    const data = await res.json();
+    document.getElementById('statPresent').textContent = `${data.present} present`;
+    document.getElementById('statExpected').textContent = `${data.expected} expected`;
+    const d = new Date(currentDate + 'T00:00:00');
+    document.getElementById('statDate').textContent =
+      d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) {
+    console.error('Stats error', e);
+  }
+}
+
+// ── Table ──────────────────────────────────────────────────────────────────
+let tableRows = [];
+
+async function loadTable() {
+  const tbody = document.getElementById('attendanceBody');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Loading…</td></tr>';
+  try {
+    const url = currentView === 'present'
+      ? `/api/admin/attendance?date=${currentDate}`
+      : `/api/admin/attendance/absent?date=${currentDate}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    tableRows = data.students || [];
+    renderTable();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:#cf222e;">Failed to load data.</td></tr>`;
+  }
+}
+
+function renderTable() {
+  const query = document.getElementById('searchFilter').value.trim().toLowerCase();
+  const filtered = query
+    ? tableRows.filter(s =>
+        s.name.toLowerCase().includes(query) ||
+        String(s.student_id).includes(query) ||
+        `stc-${String(s.student_id).padStart(4, '0')}`.includes(query)
+      )
+    : tableRows;
+
+  const tbody = document.getElementById('attendanceBody');
+  if (filtered.length === 0) {
+    const label = currentView === 'present' ? 'No students logged in on this date.' : 'All active students were present! ';
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="emoji">${currentView === 'present' ? ' ' : ' '}</div>${label}</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(s => {
+    const sid = `STC-${String(s.student_id).padStart(4, '0')}`;
+    const seat = s.seat_number || '—';
+    const shift = (s.start_time && s.end_time) ? `${s.start_time}–${s.end_time}` : '—';
+    const isNotified = notifiedSet.has(s.student_id);
+
+    let lastCol;
+    if (currentView === 'present') {
+      const t = s.logged_in_at ? new Date(s.logged_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
+      lastCol = `<span class="login-time">${t}</span>`;
+    } else {
+      lastCol = isNotified
+        ? `<button class="btn-notify notified" disabled>✓ Notified</button>`
+        : `<button class="btn-notify" id="notify-${s.student_id}" onclick="sendNotice(${s.student_id}, '${escHtml(s.name)}', '${escHtml(s.email || '')}', '${escHtml(s.whatsapp || s.phone || '')}')">Notify</button>`;
+    }
+
+    return `<tr>
+      <td>${escHtml(s.name)}</td>
+      <td><span class="student-id-badge">${sid}</span></td>
+      <td>${seat}</td>
+      <td>${shift}</td>
+      <td>${lastCol}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable() { renderTable(); }
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Notify ─────────────────────────────────────────────────────────────────
+async function sendNotice(studentId, name, email, phone) {
+  const btn = document.getElementById(`notify-${studentId}`);
+  if (!btn) return;
+
+  // Disable button + show phase 1 toast
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  const emailDisplay = email || 'student';
+  showToast(`Sending email to ${emailDisplay}…`, 'info');
+
+  // Open WhatsApp in a new tab simultaneously (non-automated)
+  if (phone) {
+    const msg = encodeURIComponent(
+      `Dear ${name}, we noticed your attendance was not recorded today at our study center. If you were present and faced any login issues, please contact the administration desk. — StudySpace`
+    );
+    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+  }
+
+  // Fire email API call
+  try {
+    const res = await fetch(`/api/admin/attendance/notify/${studentId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: currentDate }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(`Sent to ${data.email}`, 'success');
+      notifiedSet.add(studentId);
+      btn.textContent = '✓ Notified';
+      btn.classList.add('notified');
+      btn.disabled = true;
+    } else {
+      showToast(`Failed — ${data.error || 'delivery error'}`, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Notify';
+    }
+  } catch (e) {
+    showToast(`Failed to send — network error`, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Notify';
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadStats();
+loadTable();
+</script>
+</body>
+</html>

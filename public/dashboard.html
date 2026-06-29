@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard — StudySpace</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="shell"></div>
+<script src="js/common.js"></script>
+<script>
+renderShell('dashboard', 'Dashboard', 'complete overview of the study center');
+
+const content = document.getElementById('page-content');
+content.innerHTML = `
+  <div class="dashboard-layout">
+    <div id="pendingPriceRow"></div>
+    <div id="alertRow"></div>
+    <div class="card">
+      <div class="chart-card-header">
+        <h3>Revenue Trend</h3>
+        <div class="toggle-pill"><span class="active">Monthly</span></div>
+      </div>
+      <div class="bar-chart" id="revenueChart"></div>
+    </div>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="panel-grid">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="title">CURRENTLY EXPECTED</span>
+          <span class="date" id="todayDate"></span>
+        </div>
+        <div class="panel-scroll" id="expectedList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="title">QUICK ACTIONS</span></div>
+        <div style="padding: 1.25rem 1.35rem; display: flex; flex-direction: column; gap: 12px;">
+          <a class="btn btn-primary" href="students.html" style="text-decoration:none; text-align:center;">+ Add Student</a>
+          <a class="btn" href="payments.html" style="text-decoration:none; text-align:center;">Record Payment</a>
+          <a class="btn" href="seats.html" style="text-decoration:none; text-align:center;">View Seat Map</a>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+function monthLabel(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short' });
+}
+
+function fmtTime(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return { h: String(h12).padStart(2, '0'), period };
+}
+
+function renderDashboard(d) {
+  try {
+    // Alerts
+    const alerts = [];
+    if (d.overdueStudents > 0) {
+      alerts.push(`<a class="alert-banner red" href="payments.html"><b>Alert:</b> ${d.overdueStudents} student${d.overdueStudents === 1 ? '' : 's'} have overdue fees</a>`);
+    }
+    if (d.expiringSoon > 0) {
+      alerts.push(`<a class="alert-banner amber" href="payments.html"><b>Warning:</b> ${d.expiringSoon} membership${d.expiringSoon === 1 ? '' : 's'} due within 7 days</a>`);
+    }
+
+
+
+    document.getElementById('alertRow').innerHTML = alerts.length
+      ? `<div class="alert-row" style="flex-direction:column; gap:8px; align-items:stretch;">${alerts.join('')}</div>` : '';
+
+
+
+    // Revenue chart
+    const maxVal = Math.max(1, ...d.revenueTrend.map((r) => Math.max(r.collected, r.expected)));
+    document.getElementById('revenueChart').innerHTML = d.revenueTrend.map((r, i) => {
+      const isCurrent = i === d.revenueTrend.length - 1;
+      const h = Math.round((r.collected / maxVal) * 180) || 2;
+      return `<div class="bar-col">
+        <div class="bar ${isCurrent ? 'current' : ''}" style="height:${h}px" title="₹${r.collected} collected of ₹${r.expected} expected"></div>
+        <span class="bar-label">${monthLabel(r.month)}</span>
+      </div>`;
+    }).join('');
+
+    // Summary cards
+    document.getElementById('summaryGrid').innerHTML = `
+      <div class="summary-card">
+        <div class="label">Currently Expected</div>
+        <div class="value">${d.currentlyCheckedIn.length}</div>
+        <div class="sub up">live right now</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Active Memberships</div>
+        <div class="value">${d.activeStudents}</div>
+        <div class="sub">${d.occupiedSeats} / ${d.totalSeats} seats in use</div>
+      </div>
+      <div class="summary-card ${d.overdueStudents > 0 ? 'danger' : ''}">
+        <div class="label">Overdue Fees</div>
+        <div class="value">${d.overdueStudents}</div>
+      </div>
+      <div class="summary-card ${d.expiringSoon > 0 ? 'warn' : ''}">
+        <div class="label">This Month's Revenue</div>
+        <div class="value">₹${d.monthlyRevenue}</div>
+        <div class="sub">of ₹${d.expectedRevenue} expected</div>
+      </div>
+    `;
+
+    // Currently expected list
+    const list = d.currentlyCheckedIn || [];
+    document.getElementById('expectedList').innerHTML = list.length
+      ? list.map((s) => {
+          const t = fmtTime(s.start_time);
+          return `<div class="list-row">
+            <div class="time-chip live">${t.h}<span style="font-size:9px;font-weight:400;">${t.period}</span></div>
+            <div class="info">
+              <p>${s.name}</p>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">${s.gender === 'Female' ? 'D/O' : 'S/O'}: ${s.father_name || '—'}</div>
+              <span>Seat ${s.seat_number} &bull; ${s.start_time}&ndash;${s.end_time}</span>
+            </div>
+          </div>`;
+        }).join('')
+      : `<div class="empty-row">No students are expected right now.</div>`;
+
+    if (d.note) {
+      document.getElementById('alertRow').insertAdjacentHTML('beforeend', `<div class="note" style="margin-top:0.5rem;">${d.note}</div>`);
+    }
+  } catch (err) {
+    content.innerHTML = `<div class="error-banner">${err.message}</div>`;
+  }
+}
+
+
+
+async function loadFallback() {
+  renderDashboard(await api('/dashboard'));
+}
+
+window.onLiveUpdate = (data) => {
+  loadFallback().catch(() => {});
+};
+
+loadFallback().catch((err) => {
+  content.innerHTML = `<div class="error-banner">${err.message}</div>`;
+});
+
+// Pending price-change banner — fetched once on page load (independent of SSE).
+(async () => {
+  try {
+    const pending = await api('/fees/pending');
+    if (!pending.length) return;
+    const d = new Date(pending[0].pending_from + '-01');
+    const label = d.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+    const lines = pending.map(f =>
+      `<span style="font-family:var(--font-mono);font-size:12px;">${f.hours_per_day}h &nbsp;&#8377;${f.monthly_fee.toLocaleString('en-IN')} &rarr; &#8377;${Number(f.pending_monthly_fee).toLocaleString('en-IN')}/mo</span>`
+    ).join(' &nbsp;&bull;&nbsp; ');
+    document.getElementById('pendingPriceRow').innerHTML =
+      `<div class="alert-row"><a class="alert-banner amber" href="settings.html" style="cursor:pointer;text-decoration:none;">
+        Fee change scheduled from 1st ${label}: ${lines} &nbsp;&mdash;&nbsp; <u>View in Settings</u>
+      </a></div>`;
+  } catch (_) { /* non-critical */ }
+})();
+
+</script>
+</body>
+</html>

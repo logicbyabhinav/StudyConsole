@@ -1,0 +1,3521 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Students — StudySpace</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="shell"></div>
+
+  <!-- Receipt / Bill Overlay Modal -->
+  <div class="payment-modal-overlay" id="receiptModalOverlay" role="dialog" aria-modal="true" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); justify-content:center; align-items:center; z-index:2000; padding: 20px;">
+    <div class="modal-card" style="max-width: 460px; width: 100%; border-radius:12px; box-shadow:var(--shadow-lg); background:var(--card-bg);">
+      <div class="modal-header" style="text-align: center; border-bottom: 2px dashed var(--border-soft); padding: 16px 20px;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.02em;" id="receiptInstituteName">StudySpace</h3>
+        <p style="margin: 3px 0 0; font-size: 10px; font-family: monospace; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint);">Official Payment Receipt</p>
+      </div>
+      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px; max-height: 60vh; overflow-y: auto;">
+        
+        <!-- Student Info -->
+        <div style="border-bottom: 1px solid var(--border-soft); padding-bottom: 10px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;">
+            <div>
+              <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; letter-spacing: 0.02em;">Student Name</div>
+              <div style="font-size: 12.5px; font-weight: 600; color: var(--text);" id="receiptStudentName">—</div>
+            </div>
+            <div>
+              <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; letter-spacing: 0.02em;">Father's Name</div>
+              <div style="font-size: 12.5px; font-weight: 600; color: var(--text);" id="receiptFatherName">—</div>
+            </div>
+            <div>
+              <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; letter-spacing: 0.02em;">Phone Number</div>
+              <div style="font-size: 12.5px; font-weight: 600; color: var(--text);" id="receiptStudentPhone">—</div>
+            </div>
+            <div>
+              <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; letter-spacing: 0.02em;">Student ID</div>
+              <div style="font-size: 12.5px; font-weight: 600; color: var(--text); font-family: var(--font-mono);" id="receiptStudentId">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Receipt Metadata -->
+        <div style="background: var(--bg); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 12px; font-size: 12px;">
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 5px;">
+            <div style="color:var(--text-muted);">Receipt No (Bill No):</div>
+            <div style="font-family:var(--font-mono); font-weight:600; text-align:right; color:var(--text);" id="receiptBillNo">—</div>
+            
+            <div style="color:var(--text-muted);">Billing Month:</div>
+            <div style="font-family:var(--font-mono); font-weight:600; text-align:right; color:var(--text);" id="receiptBillingMonth">—</div>
+
+            <div style="color:var(--text-muted);">Payment Date:</div>
+            <div style="font-family:var(--font-mono); font-weight:600; text-align:right; color:var(--text);" id="receiptPaymentDate">—</div>
+
+            <div style="color:var(--text-muted);">Payment Mode:</div>
+            <div style="font-family:var(--font-mono); font-weight:600; text-align:right; color:var(--text);" id="receiptPaymentMode">—</div>
+          </div>
+        </div>
+
+        <!-- Bill Details Breakdown Table -->
+        <div>
+          <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; letter-spacing: 0.03em;">Bill Breakdown</div>
+          <table style="width: 100%; font-size: 12px; text-align: left; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-soft);">
+                <th style="text-align: left; padding: 4px 0; background: none; font-size: 10.5px; border-bottom: 1px solid var(--border); color: var(--text-muted);">ITEM</th>
+                <th style="text-align: right; padding: 4px 0; background: none; font-size: 10.5px; border-bottom: 1px solid var(--border); color: var(--text-muted);">AMOUNT</th>
+              </tr>
+            </thead>
+            <tbody style="font-family: var(--font-mono); color: var(--text);">
+              <tr>
+                <td style="padding: 5px 0; text-align: left; border-bottom: 1px solid var(--border-soft);">Monthly Study Fees</td>
+                <td style="padding: 5px 0; text-align: right; border-bottom: 1px solid var(--border-soft);" id="receiptBaseFee">₹0</td>
+              </tr>
+              <tr id="receiptAdmissionRow">
+                <td style="padding: 5px 0; text-align: left; border-bottom: 1px solid var(--border-soft);">Admission Fee</td>
+                <td style="padding: 5px 0; text-align: right; border-bottom: 1px solid var(--border-soft);" id="receiptAdmissionFee">₹0</td>
+              </tr>
+              <tr id="receiptFineRow">
+                <td style="padding: 5px 0; text-align: left; border-bottom: 1px solid var(--border-soft);">Late Penalty Fine</td>
+                <td style="padding: 5px 0; text-align: right; border-bottom: 1px solid var(--border-soft);" id="receiptFineAmount">₹0</td>
+              </tr>
+              <tr style="font-weight: 700; font-size: 12.5px;">
+                <td style="padding: 6px 0; text-align: left;">Total Expected</td>
+                <td style="padding: 6px 0; text-align: right;" id="receiptTotalExpected">₹0</td>
+              </tr>
+              <tr style="font-weight: 600; color: var(--green);">
+                <td style="padding: 5px 0; text-align: left; border-top: 1px dashed var(--border-soft);">Total Collected</td>
+                <td style="padding: 5px 0; text-align: right; border-top: 1px dashed var(--border-soft);" id="receiptTotalPaid">₹0</td>
+              </tr>
+              <tr style="font-weight: 700; color: var(--orange);">
+                <td style="padding: 5px 0; text-align: left; border-bottom: 1px solid var(--border-soft);">Remaining Balance Due</td>
+                <td style="padding: 5px 0; text-align: right; border-bottom: 1px solid var(--border-soft);" id="receiptRemainingDue">₹0</td>
+              </tr>
+              <tr id="receiptNoteRow" style="display:none;">
+                <td colspan="2" style="padding: 5px 0; font-size: 11px; color: var(--text-muted); font-style: italic;" id="receiptNote"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Transactions History -->
+        <div id="receiptTransactionsBlock" style="border-top: 1px dashed var(--border-soft); padding-top: 10px; margin-top: 10px; display: none;">
+          <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; letter-spacing: 0.03em;">Transactions History</div>
+          <div id="receiptTransactionsList" style="font-family: var(--font-mono); font-size: 11.5px; display: flex; flex-direction: column; gap: 6px; color: var(--text); margin-bottom: 10px;">
+          </div>
+        </div>
+
+        <!-- Status Summary Alert -->
+        <div id="receiptStatusSummary" style="padding: 8px 12px; border-radius: 6px; font-size: 11.5px; line-height: 1.4; font-family: var(--font-mono);">
+        </div>
+
+      </div>
+      <div class="modal-footer" style="justify-content: flex-end; padding: 12px 20px; border-top: 1px solid var(--border-soft);">
+        <button class="btn btn-secondary" id="receiptCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+    <script src="js/common.js"></script>
+    <script>
+      renderShell("students", "Students", "admission and student management");
+
+      function validateAddModalTabFields(modalCard, tabIdx) {
+        const tabEl = document.getElementById(`addTab-${tabIdx}`);
+        if (!tabEl) return true;
+
+        // Find all required fields that are not disabled and not hidden
+        const fields = Array.from(tabEl.querySelectorAll('input[required], select[required], textarea[required]')).filter(f => {
+          return !f.disabled && f.offsetWidth > 0 && f.offsetHeight > 0;
+        });
+
+        let valid = true;
+        const errorSlot = document.getElementById("errorSlot");
+        if (errorSlot) errorSlot.innerHTML = "";
+
+        for (const f of fields) {
+          if (!f.checkValidity()) {
+            f.classList.add('invalid');
+            f.reportValidity();
+            valid = false;
+            break;
+          } else {
+            f.classList.remove('invalid');
+          }
+        }
+
+        // Additional custom validation for Tab 3 (Timing & Seat)
+        if (valid && tabIdx === 3) {
+          const blocks = collectBlocks();
+          if (blocks.length === 0) {
+            showError("Time Block 1 needs a start time, end time, and seat number.");
+            valid = false;
+          }
+        }
+
+        // Additional custom validation for Tab 4 (Payment)
+        if (valid && tabIdx === 4) {
+          const billInput = document.getElementById("f_bill_number");
+          if (billInput && !billInput.disabled && billInput.offsetWidth > 0) {
+            const val = billInput.value.trim();
+            if (!/^\d{4,5}$/.test(val)) {
+              billInput.classList.add('invalid');
+              showError("Bill number must be a 4 or 5 digit number.");
+              valid = false;
+            } else {
+              billInput.classList.remove('invalid');
+            }
+          }
+        }
+
+        return valid;
+      }
+
+      function switchModalTab(event, idx) {
+        const modalCard = event.currentTarget.closest('.modal-card');
+        const overlay = modalCard.closest('#addStudentOverlay') || modalCard.closest('#studentModalOverlay');
+        const isAddModal = overlay && overlay.id === 'addStudentOverlay';
+        const isReviewAdmit = overlay && overlay.hasAttribute('data-registration-id');
+
+        if (isAddModal && !isReviewAdmit) {
+          // Enforce sequential progression for Add Student modal ONLY
+          const activeBtn = Array.from(modalCard.querySelectorAll('.form-tab-btn')).findIndex(b => b.classList.contains('active'));
+          const currentTab = activeBtn !== -1 ? activeBtn : 0;
+
+          // Block skipping ahead by more than 1 tab
+          if (idx > currentTab + 1) {
+            const errorSlot = document.getElementById("errorSlot");
+            if (errorSlot) {
+              errorSlot.innerHTML = `<div class="error-banner">Please complete the sections sequentially.</div>`;
+            }
+            return;
+          }
+
+          // Validate the current tab before proceeding to the next tab
+          if (idx === currentTab + 1) {
+            if (!validateAddModalTabFields(modalCard, currentTab)) {
+              return;
+            }
+          }
+        }
+
+        const contents = modalCard.querySelectorAll('.form-tab-content');
+        const buttons = modalCard.querySelectorAll('.form-tab-btn');
+        contents.forEach((c, i) => c.classList.toggle('active', i === idx));
+        buttons.forEach((b, i) => b.classList.toggle('active', i === idx));
+      }
+
+
+      function setupPhotoUploader(fileInputEl, previewImgEl, placeholderEl, removeBtnEl, hiddenInputEl, onUpdateCallback) {
+        fileInputEl.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          if (file.size > 5 * 1024 * 1024) {
+            customAlert("File Too Large", "Please select an image smaller than 5MB.");
+            fileInputEl.value = "";
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              let width = img.width;
+              let height = img.height;
+              const max_size = 300;
+
+              if (width > height) {
+                if (width > max_size) {
+                  height *= max_size / width;
+                  width = max_size;
+                }
+              } else {
+                if (height > max_size) {
+                  width *= max_size / height;
+                  height = max_size;
+                }
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, width, height);
+
+              const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+
+              previewImgEl.src = dataUrl;
+              previewImgEl.style.display = "block";
+              placeholderEl.style.display = "none";
+              hiddenInputEl.value = dataUrl;
+              if (removeBtnEl) removeBtnEl.style.display = "inline-flex";
+
+              if (onUpdateCallback) onUpdateCallback(dataUrl);
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        };
+
+        if (removeBtnEl) {
+          removeBtnEl.onclick = () => {
+            fileInputEl.value = "";
+            previewImgEl.src = "";
+            previewImgEl.style.display = "none";
+            placeholderEl.style.display = "block";
+            hiddenInputEl.value = "";
+            removeBtnEl.style.display = "none";
+
+            if (onUpdateCallback) onUpdateCallback(null);
+          };
+        }
+      }
+
+      function setupAutoPercentage(marksId, percentId) {
+        const marksInput = document.getElementById(marksId);
+        const percentInput = document.getElementById(percentId);
+        if (!marksInput || !percentInput) return;
+
+        marksInput.addEventListener("input", () => {
+          const val = marksInput.value.trim();
+          const match = val.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+          if (match) {
+            const obtained = parseFloat(match[1]);
+            const max = parseFloat(match[2]);
+            if (!isNaN(obtained) && !isNaN(max) && max > 0) {
+              const percent = (obtained / max) * 100;
+              percentInput.value = parseFloat(percent.toFixed(2));
+            }
+          }
+        });
+      }
+
+      const content = document.getElementById("page-content");
+      content.innerHTML = `
+  <div class="students-toolbar">
+    <input type="text" id="searchInput" class="search-input" placeholder="Search by name, phone, student ID, or seat...">
+    <button class="btn btn-primary" id="openModalBtn">+ Add Student</button>
+  </div>
+  <div class="filter-buttons">
+    <button class="filter-btn active" data-status="">All Students</button>
+    <button class="filter-btn" data-status="Active">Active</button>
+    <button class="filter-btn" data-status="Suspended">Suspended</button>
+    <button class="filter-btn" data-status="Archived">Archived</button>
+    <button class="filter-btn" data-status="Requests" id="btnRequests">Requests <span class="badge" id="badgeRequests" style="display:none; background:var(--red); color:white; border-radius:12px; padding:1px 6px; font-size:10px; font-weight:700; margin-left:4px;">0</span></button>
+  </div>
+  <div id="requestsSubFilters" style="display:none; gap: 8px; margin-bottom: 12px; margin-top: -8px;"></div>
+  <div class="card-flat">
+    <table class="table-roomy">
+      <thead>
+        <tr>
+          <th>STUDENT ID</th><th>NAME</th><th>PHONE</th><th>SEAT(S)</th><th>HOURS</th><th>FEE/MONTH</th><th>JOINED</th> <th>START</th> <th>END</th> <th>STATUS</th><th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody id="studentRows">
+        <tr><td colspan="11" style="color:#9AA3B2; font-family:monospace;">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+`;
+
+      let studentCache = [];
+      let feeMap = {};
+      let currentStatusFilter = "";
+      let requestSubTab = "admissions";
+      let registrationCache = { admissions: [], profileEdits: [], seatChanges: [] };
+      let studentDuesMap = {};
+
+      // Helper to format 'YYYY-MM' to 'Month YYYY'
+      function formatMonthLabel(yyyymm) {
+        if (!yyyymm) return "";
+        const [y, m] = yyyymm.split("-");
+        return new Date(+y, +m - 1, 1).toLocaleString("en-IN", {
+          month: "long",
+          year: "numeric",
+        });
+      }
+
+      // Helper to clean and format WhatsApp / phone number and construct reminder message
+      function formatWhatsAppLink(phone, name, dues) {
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length === 10) {
+          cleaned = '91' + cleaned;
+        }
+        
+        const institute = sessionStorage.getItem('institute_name') || 'StudySpace';
+        
+        const monthNames = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+        const fmtMonth = (ym) => {
+          if (!ym) return 'N/A';
+          const parts = ym.split('-');
+          if (parts.length !== 2) return ym;
+          const idx = parseInt(parts[1], 10) - 1;
+          return (idx >= 0 && idx < 12) ? `${monthNames[idx]} ${parts[0]}` : ym;
+        };
+
+        let duesText = '';
+        dues.forEach(d => {
+          duesText += `• *${fmtMonth(d.billing_month)}*: ₹${d.due_amount} due (Base: ₹${d.base_fee}${d.fine_amount > 0 ? `, Fine: ₹${d.fine_amount}` : ''})\n`;
+        });
+        const totalDue = dues.reduce((sum, d) => sum + d.due_amount, 0);
+
+        let msg = `Dear ${name},\n\nThis is an official payment reminder from *${institute}* regarding your allocated seat.\n\nOur records indicate the following outstanding dues:\n${duesText}\n*Total Outstanding Due: ₹${totalDue}*\n\nTo ensure uninterrupted access to your assigned seat, please clear these dues at the reception desk. If you have already made the payment, please share your receipt suffix code.\n\nThank you for your cooperation!\nBest regards,\n*${institute} Management*`;
+        
+        return `https://wa.me/${cleaned}?text=${encodeURIComponent(msg)}`;
+      }
+
+      const whatsappIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-left: 6px; color: #25D366; fill: #25D366; cursor: pointer;" title="Send WhatsApp Reminder"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
+
+      async function loadStudents() {
+        const tbody = document.getElementById("studentRows");
+        try {
+          const [students, fees, registrations, payments] = await Promise.all([
+            api("/students"),
+            api("/fees"),
+            api("/registrations").catch(() => ({ admissions: [], profileEdits: [], seatChanges: [] })),
+            api("/payments").catch(() => []),
+          ]);
+          studentCache = students;
+          registrationCache = registrations;
+          
+          studentDuesMap = {};
+          payments.forEach(p => {
+            if ((p.status === 'Due' || p.status === 'Partial') && p.due_amount > 0) {
+              if (!studentDuesMap[p.student_id]) {
+                studentDuesMap[p.student_id] = [];
+              }
+              studentDuesMap[p.student_id].push(p);
+            }
+          });
+
+          // Update requests count badge
+          const badge = document.getElementById("badgeRequests");
+          const admissionsCount = (registrations.admissions || []).length;
+          const profileEditsCount = (registrations.profileEdits || []).length;
+          const seatChangesCount = (registrations.seatChanges || []).length;
+          const totalRequests = admissionsCount + profileEditsCount + seatChangesCount;
+
+          if (badge) {
+            badge.innerText = totalRequests;
+            badge.style.display = totalRequests > 0 ? "inline-block" : "none";
+          }
+
+          feeMap = Object.fromEntries(
+            fees.map((f) => [f.fee_structure_id, f.monthly_fee]),
+          );
+          renderStudentRows();
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="11" style="color:#A32D2D; font-family:monospace;">${err.message}</td></tr>`;
+        }
+      }
+
+      function renderRequestsSubFilters() {
+        const div = document.getElementById("requestsSubFilters");
+        if (!div) return;
+        if (currentStatusFilter !== "Requests") {
+          div.style.display = "none";
+          return;
+        }
+
+        const admissionsCount = (registrationCache.admissions || []).length;
+        const profileEditsCount = (registrationCache.profileEdits || []).length;
+        const seatChangesCount = (registrationCache.seatChanges || []).length;
+
+        div.innerHTML = `
+          <button class="filter-btn ${requestSubTab === 'admissions' ? 'active' : ''}" onclick="switchRequestSubTab('admissions')" style="font-size: 11.5px; padding: 4px 10px; margin-right: 4px; display: inline-flex; align-items: center; gap: 6px;">
+            New Admissions <span class="badge" style="background:${requestSubTab === 'admissions' ? 'var(--blue)' : 'var(--border-soft)'}; color: ${requestSubTab === 'admissions' ? 'white' : 'var(--text-muted)'}; padding: 1px 6px; border-radius: 12px; font-size: 10px;">${admissionsCount}</span>
+          </button>
+          <button class="filter-btn ${requestSubTab === 'profileEdits' ? 'active' : ''}" onclick="switchRequestSubTab('profileEdits')" style="font-size: 11.5px; padding: 4px 10px; margin-right: 4px; display: inline-flex; align-items: center; gap: 6px;">
+            Profile Updates <span class="badge" style="background:${requestSubTab === 'profileEdits' ? 'var(--blue)' : 'var(--border-soft)'}; color: ${requestSubTab === 'profileEdits' ? 'white' : 'var(--text-muted)'}; padding: 1px 6px; border-radius: 12px; font-size: 10px;">${profileEditsCount}</span>
+          </button>
+          <button class="filter-btn ${requestSubTab === 'seatChanges' ? 'active' : ''}" onclick="switchRequestSubTab('seatChanges')" style="font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;">
+            Seat Changes <span class="badge" style="background:${requestSubTab === 'seatChanges' ? 'var(--blue)' : 'var(--border-soft)'}; color: ${requestSubTab === 'seatChanges' ? 'white' : 'var(--text-muted)'}; padding: 1px 6px; border-radius: 12px; font-size: 10px;">${seatChangesCount}</span>
+          </button>
+        `;
+        div.style.display = "flex";
+      }
+
+      window.switchRequestSubTab = function(subTab) {
+        requestSubTab = subTab;
+        renderStudentRows();
+      };
+
+      function renderStudentRows() {
+        const tbody = document.getElementById("studentRows");
+        const thead = document.querySelector(".table-roomy thead");
+        const q = (document.getElementById("searchInput").value || "")
+          .trim()
+          .toLowerCase();
+
+        renderRequestsSubFilters();
+
+        if (currentStatusFilter === "Requests") {
+          if (requestSubTab === "admissions") {
+            thead.innerHTML = `
+              <tr>
+                <th>NAME</th><th>CONTACT</th><th>DOB / GENDER</th><th>PARENTS</th><th>ADDRESS</th><th>SEAT / SHIFT</th><th>JOINING</th><th>ACTIONS</th>
+              </tr>
+            `;
+            
+            const list = registrationCache.admissions || [];
+            const filtered = list.filter(r => {
+              if (!q) return true;
+              return r.name.toLowerCase().includes(q) ||
+                     r.phone.includes(q) ||
+                     r.preferred_seat.toLowerCase().includes(q);
+            });
+            
+            if (filtered.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="8" style="color:#9AA3B2; font-family:monospace; text-align:center; padding: 20px;">No pending registration requests.</td></tr>`;
+              return;
+            }
+            
+            tbody.innerHTML = filtered.map(r => {
+              const parentInfo = `F: ${r.father_name}<br>M: ${r.mother_name}`;
+              const contactInfo = `P: ${r.phone}<br>W: ${r.whatsapp}<br>E: ${r.email}`;
+              const shiftInfo = `Seat: <b>${r.preferred_seat}</b><br>${r.preferred_start_time}–${r.preferred_end_time}`;
+              
+              return `
+                <tr class="request-row" data-request-id="${r.request_id}" style="cursor:default;">
+                  <td style="font-weight:600; vertical-align: top;">${r.name}</td>
+                  <td class="mono" style="font-size:12.5px; line-height:1.4; vertical-align: top;">${contactInfo}</td>
+                  <td style="font-size:12.5px; line-height:1.4; vertical-align: top;">DOB: ${r.dob}<br>${r.gender}</td>
+                  <td style="font-size:12.5px; line-height:1.4; vertical-align: top;">${parentInfo}</td>
+                  <td style="font-size:12.5px; line-height:1.4; vertical-align: top; max-width: 180px; white-space: normal;">${r.address}</td>
+                  <td class="mono" style="font-size:12.5px; line-height:1.4; vertical-align: top;">${shiftInfo}</td>
+                  <td class="mono" style="vertical-align: top;">${r.joining_date}</td>
+                  <td style="vertical-align: top; white-space: nowrap;">
+                    <button class="action-btn admit-request-btn btn btn-primary" data-request-id="${r.request_id}" style="padding: 4px 8px; font-size:11.5px; margin-right:4px;">Admit</button>
+                    <button class="action-btn reject-request-btn btn btn-danger" data-request-id="${r.request_id}" style="padding: 4px 8px; font-size:11.5px; background-color:#dc2626; color:white;">Reject</button>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+            
+            tbody.querySelectorAll(".admit-request-btn").forEach(btn => {
+              btn.onclick = (e) => {
+                e.stopPropagation();
+                const reqId = btn.getAttribute("data-request-id");
+                const req = (registrationCache.admissions || []).find(r => r.request_id == reqId);
+                if (req) {
+                  openModal(req);
+                }
+              };
+            });
+            
+            tbody.querySelectorAll(".reject-request-btn").forEach(btn => {
+              btn.onclick = async (e) => {
+                e.stopPropagation();
+                const reqId = btn.getAttribute("data-request-id");
+                if (await customConfirm("Confirm Rejection", "Are you sure you want to reject and delete this registration request?")) {
+                  try {
+                    await api(`/registrations/${reqId}`, { method: 'DELETE' });
+                    loadStudents();
+                  } catch(err) {
+                    await customAlert("Rejection Failed", err.message);
+                  }
+                }
+              };
+            });
+          }
+          else if (requestSubTab === "profileEdits") {
+            thead.innerHTML = `
+              <tr>
+                <th>STUDENT</th><th>CHANGES (CURRENT ➔ PROPOSED)</th><th>REQUESTED AT</th><th>ACTIONS</th>
+              </tr>
+            `;
+            
+            const list = registrationCache.profileEdits || [];
+            const filtered = list.filter(r => {
+              if (!q) return true;
+              return r.name.toLowerCase().includes(q) ||
+                     r.phone.includes(q) ||
+                     (r.current_name && r.current_name.toLowerCase().includes(q));
+            });
+            
+            if (filtered.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="4" style="color:#9AA3B2; font-family:monospace; text-align:center; padding: 20px;">No pending profile update requests.</td></tr>`;
+              return;
+            }
+
+            const fieldsToCompare = [
+              { key: 'name', label: 'Name' },
+              { key: 'gender', label: 'Gender' },
+              { key: 'dob', label: 'Date of Birth' },
+              { key: 'phone', label: 'Phone' },
+              { key: 'whatsapp', label: 'WhatsApp' },
+              { key: 'email', label: 'Email' },
+              { key: 'aadhaar_number', label: 'Aadhaar Number' },
+              { key: 'father_name', label: "Father's Name" },
+              { key: 'mother_name', label: "Mother's Name" },
+              { key: 'emergency_contact', label: 'Emergency Contact' },
+              { key: 'address', label: 'Address' },
+              { key: 'form_number', label: 'Form Number' },
+              { key: 'class', label: 'Class' },
+              { key: 'parent_occupation', label: 'Parent Occupation' },
+              { key: 'nationality', label: 'Nationality' },
+              { key: 'religion', label: 'Religion' },
+              { key: 'goal', label: 'Goal/Exam' },
+              { key: 'address_village', label: 'Village' },
+              { key: 'address_po', label: 'Post Office' },
+              { key: 'address_ps', label: 'Police Station' },
+              { key: 'address_district', label: 'District' },
+              { key: 'address_state', label: 'State' },
+              { key: 'address_pin', label: 'PIN Code' },
+              { key: 'education_history', label: 'Education History' }
+            ];
+            
+            tbody.innerHTML = filtered.map(r => {
+              const student = studentCache.find(s => s.student_id === r.student_id) || {};
+              const diffs = [];
+              if (r.photo_changed) {
+                diffs.push({ label: 'Photo', current: 'Existing photo', proposed: r.photo_data ? 'New photo uploaded' : 'Photo removed' });
+              }
+              fieldsToCompare.forEach(f => {
+                let curr = student[f.key] || "";
+                let prop = r[f.key] || "";
+                if (f.key === 'education_history') {
+                  try {
+                    const currArr = JSON.parse(curr || "[]");
+                    const propArr = JSON.parse(prop || "[]");
+                    if (JSON.stringify(currArr) !== JSON.stringify(propArr)) {
+                      diffs.push({ label: f.label, current: 'Education details updated', proposed: 'See details' });
+                    }
+                  } catch(e) {}
+                  return;
+                }                if (String(curr).trim() !== String(prop).trim()) {
+                  diffs.push({
+                    label: f.label,
+                    current: curr || "—",
+                    proposed: prop || "—"
+                  });
+                }
+              });
+
+              const diffListHtml = diffs.map(d => `
+                <div style="margin-bottom: 4px;">
+                  <b style="color:var(--text-muted); font-size:11.5px;">${d.label}:</b> 
+                  <span style="color:#cf222e; text-decoration:line-through; margin-right:4px;">${d.current}</span>
+                  <span style="color:#1a7f37; font-weight:600;">➔ ${d.proposed}</span>
+                </div>
+              `).join('');
+
+              return `
+                <tr class="request-row" data-request-id="${r.request_id}" style="cursor:default;">
+                  <td style="font-weight:600; vertical-align: top;">
+                    ${r.name}<br>
+                    <span style="font-weight:500; font-size:11px; color:var(--text-muted);">STC-${String(r.student_id).padStart(4, '0')}</span>
+                  </td>
+                  <td style="vertical-align: top;">
+                    ${diffListHtml || '<span style="color:var(--text-muted); font-style:italic;">No field changes detected</span>'}
+                  </td>
+                  <td class="mono" style="vertical-align: top; font-size:12.5px;">${new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  <td style="vertical-align: top; white-space: nowrap;">
+                    <button class="action-btn approve-edit-btn btn btn-primary" data-request-id="${r.request_id}" style="padding: 4px 8px; font-size:11.5px; margin-right:4px;">Approve</button>
+                    <button class="action-btn reject-edit-btn btn btn-danger" data-request-id="${r.request_id}" style="padding: 4px 8px; font-size:11.5px; background-color:#dc2626; color:white;">Reject</button>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+            
+            tbody.querySelectorAll(".approve-edit-btn").forEach(btn => {
+              btn.onclick = async (e) => {
+                e.stopPropagation();
+                const reqId = btn.getAttribute("data-request-id");
+                if (await customConfirm("Approve Profile Update", "Apply all staging updates to the student profile?")) {
+                  try {
+                    await api(`/registrations/edit/${reqId}/approve`, { method: 'POST' });
+                    loadStudents();
+                  } catch(err) {
+                    await customAlert("Approval Failed", err.message);
+                  }
+                }
+              };
+            });
+            
+            tbody.querySelectorAll(".reject-edit-btn").forEach(btn => {
+              btn.onclick = async (e) => {
+                e.stopPropagation();
+                const reqId = btn.getAttribute("data-request-id");
+                if (await customConfirm("Reject Profile Update", "Reject this student profile update request?")) {
+                  try {
+                    await api(`/registrations/edit/${reqId}/reject`, { method: 'POST' });
+                    loadStudents();
+                  } catch(err) {
+                    await customAlert("Rejection Failed", err.message);
+                  }
+                }
+              };
+            });
+          }
+          else if (requestSubTab === "seatChanges") {
+            thead.innerHTML = `
+              <tr>
+                <th>STUDENT</th><th>CURRENT CONFIG</th><th>REQUESTED CONFIG</th><th>REASON</th><th>REQUESTED AT</th><th>ACTIONS</th>
+              </tr>
+            `;
+            
+            const list = registrationCache.seatChanges || [];
+            const filtered = list.filter(r => {
+              if (!q) return true;
+              return r.student_name.toLowerCase().includes(q) ||
+                     r.student_phone.includes(q) ||
+                     r.preferred_seat.toLowerCase().includes(q);
+            });
+            
+            if (filtered.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="6" style="color:#9AA3B2; font-family:monospace; text-align:center; padding: 20px;">No pending seat change requests.</td></tr>`;
+              return;
+            }
+            
+            tbody.innerHTML = filtered.map(r => {
+              const student = studentCache.find(s => s.student_id === r.student_id) || {};
+              const currentSeats = student.allocations ? student.allocations.map(a => `Seat ${a.seat_number} (${a.start_time}-${a.end_time})`).join(', ') : 'None';
+              
+              return `
+                <tr class="request-row" data-request-id="${r.request_id}" style="cursor:default;">
+                  <td style="font-weight:600; vertical-align: top;">
+                    ${r.student_name}<br>
+                    <span style="font-weight:500; font-size:11px; color:var(--text-muted);">STC-${String(r.student_id).padStart(4, '0')}</span>
+                  </td>
+                  <td style="vertical-align: top; font-size:12.5px;">${currentSeats}</td>
+                  <td style="vertical-align: top; font-size:12.5px;">
+                    <b>Seat ${r.preferred_seat}</b><br>
+                    <span style="font-family:monospace;">${r.preferred_start_time} - ${r.preferred_end_time}</span>
+                  </td>
+                  <td style="vertical-align: top; max-width: 200px; white-space: normal; font-size:12.5px;">
+                    "${r.reason || '—'}"
+                  </td>
+                  <td class="mono" style="vertical-align: top; font-size:12.5px;">${new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  <td style="vertical-align: top; white-space: nowrap;">
+                    <a href="reallocations.html?request_id=${r.request_id}" class="action-btn btn btn-primary" style="padding: 4px 8px; font-size:11.5px; text-decoration:none; margin-right:4px; display:inline-block;">Go to Console</a>
+                    <button class="action-btn reject-seat-btn btn btn-danger" data-request-id="${r.request_id}" style="padding: 4px 8px; font-size:11.5px; background-color:#dc2626; color:white;">Reject</button>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+            
+            tbody.querySelectorAll(".reject-seat-btn").forEach(btn => {
+              btn.onclick = async (e) => {
+                e.stopPropagation();
+                const reqId = btn.getAttribute("data-request-id");
+                const reason = await customPrompt("Reject Request", "Enter reason for rejection:");
+                if (reason !== null) {
+                  try {
+                    await api(`/reallocations/${reqId}/reject`, {
+                      method: 'POST',
+                      body: JSON.stringify({ rejection_reason: reason })
+                    });
+                    loadStudents();
+                  } catch(err) {
+                    await customAlert("Rejection Failed", err.message);
+                  }
+                }
+              };
+            });
+          }
+          
+          return;
+        }
+
+        // Restore normal table headers
+        thead.innerHTML = `
+          <tr>
+            <th>STUDENT ID</th><th>NAME</th><th>PHONE</th><th>SEAT(S)</th><th>HOURS</th><th>FEE/MONTH</th><th>JOINED</th> <th>START</th> <th>END</th> <th>STATUS</th><th>ACTIONS</th>
+          </tr>
+        `;
+
+        const filtered = studentCache.filter((s) => {
+          if (currentStatusFilter && s.status !== currentStatusFilter)
+            return false;
+          if (!q) return true;
+          const seatList = s.allocations
+            .map((a) => a.seat_number)
+            .join(" ")
+            .toLowerCase();
+          const idStr =
+            `stc-${String(s.student_id).padStart(4, "0")}`.toLowerCase();
+          return (
+            s.name.toLowerCase().includes(q) ||
+            s.phone.includes(q) ||
+            idStr.includes(q) ||
+            seatList.includes(q)
+          );
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="11" style="color:#9AA3B2; font-family:monospace;">${studentCache.length === 0 ? 'No students yet — click "Add Student" to admit your first one.' : "No students match your search/filter."}</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = filtered
+          .map((s) => {
+            const seatList =
+              s.allocations.map((a) => a.seat_number).join(", ") || "—";
+            const fee = feeMap[s.fee_structure_id];
+            const editable = !isInactiveStatus(s.status);
+            const canReactivate =
+              s.status === "Suspended" || s.status === "Archived";
+
+            let actions = "";
+            if (editable) {
+              actions = `<button class="action-btn suspend-btn" data-student-id="${s.student_id}" data-name="${s.name.replace(/"/g, "&quot;")}" title="Suspend student">⊘ Suspend</button>`;
+            } else if (canReactivate) {
+              actions = `<button class="action-btn reactivate-btn" data-student-id="${s.student_id}" data-name="${s.name.replace(/"/g, "&quot;")}" title="Reactivate student">↻ Reactivate</button>`;
+            } else {
+              actions = `<span class="text-muted">—</span>`;
+            }
+
+            // WhatsApp link for overdue dues
+            const studentDues = studentDuesMap[s.student_id] || [];
+            const hasDues = studentDues.length > 0;
+            const waLink = hasDues ? formatWhatsAppLink(s.whatsapp || s.phone, s.name, studentDues) : null;
+            const waIconHtml = waLink ? `<a href="${waLink}" target="_blank" onclick="event.stopPropagation();">${whatsappIcon}</a>` : '';
+
+            return `<tr class="student-row" data-student-id="${s.student_id}" style="cursor:pointer;">
+      <td class="mono student-id-cell" title="Click to view details">STC-${String(s.student_id).padStart(4, "0")}</td>
+      <td class="student-name-cell" title="Click to view details" style="font-weight:600;">${s.name}</td>
+      <td class="mono">${s.phone}</td>
+      <td class="mono">${seatList}</td>
+      <td class="mono">${s.duration_hours}h</td>
+      <td class="mono">${fee ? "₹" + fee : "—"}</td>
+      <td class="mono">${s.joining_date || "—"}</td>
+      <td class="mono">${s.start_time || "-"}</td>
+      <td class="mono">${s.end_time || "-"}</td>
+      <td>${statusBadge(s.status)}</td>
+      <td class="actions-cell">${actions}</td>
+    </tr>`;
+          })
+          .join("");
+
+        // Attach event listeners
+        tbody.querySelectorAll(".student-row").forEach((row) => {
+          const idStr = row.getAttribute("data-student-id");
+          row.addEventListener("click", (e) => {
+            if (!e.target.classList.contains("action-btn") && !e.target.closest("a")) {
+              openStudentModal(idStr);
+            }
+          });
+        });
+
+        // Suspend buttons
+        tbody.querySelectorAll(".suspend-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const studentId = btn.getAttribute("data-student-id");
+            const studentName = btn.getAttribute("data-name");
+            openSuspendModal(studentId, studentName, async (reason) => {
+              await suspendStudent(studentId, reason);
+            });
+          });
+        });
+
+        // Reactivate buttons
+        tbody.querySelectorAll(".reactivate-btn").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openReactivateModal(
+              btn.getAttribute("data-student-id"),
+              btn.getAttribute("data-name"),
+            );
+          });
+        });
+      }
+
+      async function suspendStudent(studentId, reason) {
+        try {
+          const res = await api(`/students/${studentId}/suspend`, {
+            method: "POST",
+            body: JSON.stringify({ reason }),
+          });
+          loadStudents();
+          if (res && res.message) {
+            await customAlert("Suspended", res.message);
+          }
+        } catch (err) {
+          await customAlert("Error", err.message);
+        }
+      }
+
+      async function archiveStudentQuick(studentId) {
+        try {
+          await api(`/students/${studentId}/archive`, {
+            method: "POST",
+            body: JSON.stringify({ reason: "Archived via quick action" }),
+          });
+          loadStudents();
+        } catch (err) {
+          await customAlert("Error", err.message);
+        }
+      }
+      loadStudents();
+      window.onLiveUpdate = (data) => {
+        if (data.type === 'students' || data.type === 'registrations' || data.type === 'payments') {
+          loadStudents();
+        }
+      };
+      document
+        .getElementById("searchInput")
+        .addEventListener("input", renderStudentRows);
+
+      document.querySelectorAll(".filter-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          document
+            .querySelectorAll(".filter-btn")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentStatusFilter = btn.getAttribute("data-status");
+          renderStudentRows();
+        });
+      });
+
+      // ---------- Student Modal (edit when Active, read-only + Reactivate otherwise) ----------
+
+      async function openStudentModal(studentId) {
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.id = "studentModalOverlay";
+        overlay.innerHTML = `<div class="modal-card" style="max-width: 800px; width: 90%; height: 75vh; max-height: 620px; min-height: 480px; display: flex; flex-direction: column;"><div class="modal-header"><h3>Loading...</h3></div><div class="modal-body"></div></div>`;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) overlay.remove();
+        });
+
+        try {
+          const s = await api(`/students/${studentId}`);
+          const editable = !isInactiveStatus(s.status);
+          const canReactivate =
+            s.status === "Suspended" || s.status === "Archived";
+          const dis = editable ? "" : "disabled";
+
+          const seatInfo =
+            s.allocations
+              .filter((a) => a.active)
+              .map((a) => `${a.seat_number} (${a.start_time}–${a.end_time})`)
+              .join(", ") || "No active seat";
+          const feeLabel = s.feeStructure
+            ? `${s.feeStructure.hours_per_day}h — ₹${s.feeStructure.monthly_fee}/month`
+            : "—";
+          let edu = [];
+          try {
+            edu = JSON.parse(s.education_history || "[]");
+          } catch (e) {
+            edu = [];
+          }
+          const getEduField = (level, key) => {
+            const item = edu.find(e => e.level === level) || {};
+            return item[key] || "";
+          };
+
+          const esc = (v) => (v || "").toString().replace(/"/g, "&quot;");
+          const inp = (id, value, type = "text") =>
+            `<input type="${type}" id="${id}" value="${esc(value)}" ${dis}>`;
+          const ro = (value) =>
+            `<input type="text" value="${esc(value) || "—"}" disabled>`;
+
+          overlay.querySelector(".modal-card").innerHTML = `
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-soft); padding: 1.25rem 1.5rem 0.75rem 1.5rem;">
+        <div>
+          <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em;">${editable ? "Edit Student" : "Student Details"} — STC-${String(s.student_id).padStart(4, "0")}</h3>
+          <p style="margin: 4px 0 0; font-size: 12px; color: var(--text-muted);">${s.name} &middot; ${statusBadge(s.status)}</p>
+        </div>
+        <!-- Header Profile Photo Window -->
+        <div id="m_headerAvatarContainer" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: ${editable ? "pointer" : "default"}; position: relative; box-shadow: var(--shadow-sm); flex-shrink: 0;" title="${editable ? "Click to change photo" : ""}">
+          <span id="m_headerAvatarPlaceholder" style="font-size: 20px; color: var(--text-faint); line-height: 1; margin-top: -2px;">👤</span>
+          <img id="m_headerAvatarImg" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+        </div>
+      </div>
+
+      <!-- Form Tabs Navigation (Fixed at top) -->
+      <div class="form-tabs" style="margin: 1rem 1.5rem 0.5rem 1.5rem;">
+        <button type="button" class="form-tab-btn active" onclick="switchModalTab(event, 0)">Profile</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 1)">Family & Address</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 2)">Qualifications</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 3)">Study & Fee</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 4)">Remarks</button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; padding: 0.5rem 1.5rem 1.5rem 1.5rem; flex: 1 1 auto;">
+        <div id="errorSlot"></div>
+
+        <!-- Tab 0: Profile -->
+        <div class="form-tab-content active" id="mTab-0">
+          <h4 class="form-section-title-compact">Student Information Details</h4>
+          <div class="form-grid-responsive">
+            <div class="field"><label>FORM NO.</label>${inp("m_form_number", s.form_number || "")}</div>
+            <div class="field"><label>CLASS</label>${inp("m_class", s.class || "")}</div>
+            <div class="field"><label>GOAL / EXAM</label>${inp("m_goal", s.goal || "")}</div>
+          </div>
+          <div class="field" style="margin-top: 12px;"><label>NAME *</label>${inp("m_name", s.name)}</div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field">
+              <label>GENDER *</label>
+              <select id="m_gender" ${dis} style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text);">
+                <option value="Male" ${s.gender === "Male" ? "selected" : ""}>Male</option>
+                <option value="Female" ${s.gender === "Female" ? "selected" : ""}>Female</option>
+                <option value="Other" ${s.gender === "Other" ? "selected" : ""}>Other</option>
+              </select>
+            </div>
+            <div class="field"><label>DATE OF BIRTH *</label>${inp("m_dob", s.dob, "date")}</div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>PHONE NUMBER *</label>${inp("m_phone", s.phone)}</div>
+            <div class="field"><label>WHATSAPP NUMBER</label>${inp("m_whatsapp", s.whatsapp || "")}</div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>EMAIL ADDRESS</label>${inp("m_email", s.email || "")}</div>
+            <div class="field"><label>AADHAAR NUMBER *</label>${inp("m_aadhaar", s.aadhaar_number)}</div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>NATIONALITY</label>${inp("m_nationality", s.nationality || "Indian")}</div>
+            <div class="field"><label>RELIGION</label>${inp("m_religion", s.religion || "")}</div>
+            <div class="field" style="display: none;"><label>PHOTO PATH</label>${inp("m_photo_path", s.photo_path || "")}</div>
+          </div>
+          <input type="file" id="m_photo_file" accept="image/*" style="display: none;">
+          <input type="hidden" id="m_photo_data">
+        </div>
+
+        <!-- Tab 1: Family & Address -->
+        <div class="form-tab-content" id="mTab-1">
+          <h4 class="form-section-title-compact">Family & Address Information</h4>
+          <div class="form-grid-responsive">
+            <div class="field"><label>FATHER NAME *</label>${inp("m_father", s.father_name)}</div>
+            <div class="field"><label>MOTHER NAME *</label>${inp("m_mother", s.mother_name)}</div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>PARENT OCCUPATION</label>${inp("m_parent_occupation", s.parent_occupation || "")}</div>
+            <div class="field"><label>EMERGENCY CONTACT</label>${inp("m_emergency", s.emergency_contact)}</div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 16px; border-top: 1px solid var(--border-soft); padding-top: 16px;">
+            <div class="field"><label>VILLAGE / AREA</label>${inp("m_village", s.address_village || "")}</div>
+            <div class="field"><label>POST OFFICE (P.O.)</label>${inp("m_po", s.address_po || "")}</div>
+            <div class="field"><label>POLICE STATION (P.S.)</label>${inp("m_ps", s.address_ps || "")}</div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>DISTRICT</label>${inp("m_district", s.address_district || "")}</div>
+            <div class="field"><label>STATE</label>${inp("m_state", s.address_state || "")}</div>
+            <div class="field"><label>PIN CODE</label>${inp("m_pin", s.address_pin || "")}</div>
+          </div>
+          <div class="field" style="display: none;">
+            <label>COMBINED ADDRESS (BACKWARD COMPATIBILITY)</label>
+            ${inp("m_address", s.address)}
+          </div>
+        </div>
+
+        <!-- Tab 2: Academic Qualifications -->
+        <div class="form-tab-content" id="mTab-2">
+          <h4 class="form-section-title-compact">Academic Qualifications History</h4>
+          <div style="overflow-x: auto;">
+            <table class="table-roomy" style="width:100%; min-width:500px; border-collapse:collapse; font-size:12.5px;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <th style="text-align:left; padding: 8px;">Exam / Class</th>
+                  <th style="text-align:left; padding: 8px;">Board / University</th>
+                  <th style="text-align:left; padding: 8px; width: 80px;">Year</th>
+                  <th style="text-align:left; padding: 8px; width: 100px;">Marks</th>
+                  <th style="text-align:left; padding: 8px; width: 80px;">Percentage %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <td style="padding: 8px; font-weight:600;">Matric (10th)</td>
+                  <td style="padding: 4px;">${inp("m_matric_board", getEduField("Matric", "board"))}</td>
+                  <td style="padding: 4px;">${inp("m_matric_year", getEduField("Matric", "year"), "number")}</td>
+                  <td style="padding: 4px;">${inp("m_matric_marks", getEduField("Matric", "marks"))}</td>
+                  <td style="padding: 4px;">${inp("m_matric_percent", getEduField("Matric", "percent"), "number")}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <td style="padding: 8px; font-weight:600;">Intermediate (12th)</td>
+                  <td style="padding: 4px;">${inp("m_inter_board", getEduField("Intermediate", "board"))}</td>
+                  <td style="padding: 4px;">${inp("m_inter_year", getEduField("Intermediate", "year"), "number")}</td>
+                  <td style="padding: 4px;">${inp("m_inter_marks", getEduField("Intermediate", "marks"))}</td>
+                  <td style="padding: 4px;">${inp("m_inter_percent", getEduField("Intermediate", "percent"), "number")}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <td style="padding: 8px; font-weight:600;">Graduation</td>
+                  <td style="padding: 4px;">${inp("m_grad_board", getEduField("Graduation", "board"))}</td>
+                  <td style="padding: 4px;">${inp("m_grad_year", getEduField("Graduation", "year"), "number")}</td>
+                  <td style="padding: 4px;">${inp("m_grad_marks", getEduField("Graduation", "marks"))}</td>
+                  <td style="padding: 4px;">${inp("m_grad_percent", getEduField("Graduation", "percent"), "number")}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 3: Study & Fee Information -->
+        <div class="form-tab-content" id="mTab-3">
+          <h4 class="form-section-title-compact">Study, Timing & Fee Settings</h4>
+          <div class="form-grid-responsive">
+            <div class="field"><label>JOINING DATE</label>${ro(s.joining_date)}</div>
+            <div class="field"><label>LEAVING DATE</label>${ro(s.leaving_date)}</div>
+            <div class="field"><label>CURRENT SEAT / TIMING</label>${ro(seatInfo)}</div>
+            <div class="field"><label>FEE PLAN</label>${ro(feeLabel)}</div>
+            <div class="field"><label>PAYMENT STATUS</label>${ro(s.paymentStatus)}</div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Remarks -->
+        <div class="form-tab-content" id="mTab-4">
+          <h4 class="form-section-title-compact">Remarks & Notes</h4>
+          <textarea id="m_remarks" rows="3" ${dis} style="width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text);" placeholder="${editable ? "Add a note — also used as the reason if you suspend or archive below." : ""}">${s.remarks || ""}</textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeBtn">Close</button>
+        <div class="modal-footer-right">
+          ${
+            editable
+              ? `
+            <button class="btn btn-danger" id="archiveBtn">Archive</button>
+            <button class="btn btn-danger" id="suspendBtn">Suspend</button>
+            <button class="btn btn-primary" id="saveBtn">Save Changes</button>
+          `
+              : ""
+          }
+          ${canReactivate ? `<button class="btn btn-primary" id="reactivateBtn">Reactivate Student</button>` : ""}
+        </div>
+      </div>
+    `;
+
+          document.getElementById("closeBtn").onclick = () => overlay.remove();
+
+          // Setup photo uploader bindings directly to header avatar
+          const mFileInput = document.getElementById("m_photo_file");
+          const mHiddenInput = document.getElementById("m_photo_data");
+
+          const mHeaderAvatarImg = document.getElementById("m_headerAvatarImg");
+          const mHeaderAvatarPlaceholder = document.getElementById("m_headerAvatarPlaceholder");
+          const mHeaderAvatarContainer = document.getElementById("m_headerAvatarContainer");
+
+          if (editable && mHeaderAvatarContainer) {
+            mHeaderAvatarContainer.onclick = () => mFileInput.click();
+          }
+
+          setupPhotoUploader(mFileInput, mHeaderAvatarImg, mHeaderAvatarPlaceholder, null, mHiddenInput);
+
+          // Auto calculate percentage for Matric, Intermediate, Graduation marks in Edit modal
+          setupAutoPercentage("m_matric_marks", "m_matric_percent");
+          setupAutoPercentage("m_inter_marks", "m_inter_percent");
+          setupAutoPercentage("m_grad_marks", "m_grad_percent");
+
+          // Populate existing photo if available
+          if (s.photo_data && s.photo_data.trim() !== "") {
+            mHiddenInput.value = s.photo_data;
+            mHeaderAvatarImg.src = s.photo_data;
+            mHeaderAvatarImg.style.display = "block";
+            mHeaderAvatarPlaceholder.style.display = "none";
+          }
+
+          const saveBtn = document.getElementById("saveBtn");
+          if (saveBtn)
+            saveBtn.onclick = async () => {
+              document.getElementById("errorSlot").innerHTML = "";
+              const village = document.getElementById("m_village").value.trim();
+              const po = document.getElementById("m_po").value.trim();
+              const ps = document.getElementById("m_ps").value.trim();
+              const district = document.getElementById("m_district").value.trim();
+              const state = document.getElementById("m_state").value.trim();
+              const pin = document.getElementById("m_pin").value.trim();
+              let address = "";
+              if (village || po || ps || district || state || pin) {
+                address = `Village: ${village}, P.O.: ${po}, P.S.: ${ps}, Dist: ${district}, State: ${state} - ${pin}`;
+              } else {
+                address = document.getElementById("m_address").value.trim();
+              }
+
+              const education_history = [
+                {
+                  level: "Matric",
+                  board: document.getElementById("m_matric_board").value.trim(),
+                  year: document.getElementById("m_matric_year").value.trim(),
+                  marks: document.getElementById("m_matric_marks").value.trim(),
+                  percent: document.getElementById("m_matric_percent").value.trim()
+                },
+                {
+                  level: "Intermediate",
+                  board: document.getElementById("m_inter_board").value.trim(),
+                  year: document.getElementById("m_inter_year").value.trim(),
+                  marks: document.getElementById("m_inter_marks").value.trim(),
+                  percent: document.getElementById("m_inter_percent").value.trim()
+                },
+                {
+                  level: "Graduation",
+                  board: document.getElementById("m_grad_board").value.trim(),
+                  year: document.getElementById("m_grad_year").value.trim(),
+                  marks: document.getElementById("m_grad_marks").value.trim(),
+                  percent: document.getElementById("m_grad_percent").value.trim()
+                }
+              ];
+
+              const payload = {
+                name: document.getElementById("m_name").value.trim(),
+                gender: document.getElementById("m_gender").value,
+                dob: document.getElementById("m_dob").value,
+                phone: document.getElementById("m_phone").value.trim(),
+                whatsapp: document.getElementById("m_whatsapp").value.trim(),
+                email: document.getElementById("m_email").value.trim(),
+                aadhaar_number: document.getElementById("m_aadhaar").value.trim(),
+                father_name: document.getElementById("m_father").value.trim(),
+                mother_name: document.getElementById("m_mother").value.trim(),
+                emergency_contact: document.getElementById("m_emergency").value.trim(),
+                address: address,
+                remarks: document.getElementById("m_remarks").value.trim(),
+                
+                form_number: document.getElementById("m_form_number").value.trim(),
+                class: document.getElementById("m_class").value.trim(),
+                parent_occupation: document.getElementById("m_parent_occupation").value.trim(),
+                nationality: document.getElementById("m_nationality").value.trim(),
+                religion: document.getElementById("m_religion").value.trim(),
+                goal: document.getElementById("m_goal").value.trim(),
+                photo_path: document.getElementById("m_photo_path").value.trim(),
+                photo_data: document.getElementById("m_photo_data").value.trim(),
+                address_village: village,
+                address_po: po,
+                address_ps: ps,
+                address_district: district,
+                address_state: state,
+                address_pin: pin,
+                education_history: JSON.stringify(education_history)
+              };
+              try {
+                await api(`/students/${studentId}`, {
+                  method: "PUT",
+                  body: JSON.stringify(payload),
+                });
+                overlay.remove();
+                loadStudents();
+              } catch (err) {
+                showError(err.message);
+              }
+            };
+
+          const suspendBtn = document.getElementById("suspendBtn");
+          if (suspendBtn)
+            suspendBtn.onclick = () => {
+              openSuspendModal(studentId, s.name, async (reason) => {
+                const res = await api(`/students/${studentId}/suspend`, {
+                  method: "POST",
+                  body: JSON.stringify({ reason }),
+                });
+                overlay.remove();
+                loadStudents();
+                if (res && res.message) {
+                  await customAlert("Suspended", res.message);
+                }
+              });
+            };
+
+          const archiveBtn = document.getElementById("archiveBtn");
+          if (archiveBtn)
+            archiveBtn.onclick = () => {
+              openArchiveModal(studentId, s.name, async (reason) => {
+                const res = await api(`/students/${studentId}/archive`, {
+                  method: "POST",
+                  body: JSON.stringify({ reason }),
+                });
+                overlay.remove();
+                loadStudents();
+                if (res && res.message) {
+                  await customAlert("Archived", res.message);
+                }
+              });
+            };
+
+          const reactivateBtn = document.getElementById("reactivateBtn");
+          if (reactivateBtn)
+            reactivateBtn.onclick = () => {
+              overlay.remove();
+              openReactivateModal(studentId, s.name);
+            };
+        } catch (err) {
+          overlay.querySelector(".modal-body").innerHTML =
+            `<div class="error-banner">${err.message}</div>`;
+        }
+      }
+
+      let blockCount = 1;
+
+      function blockTemplate(index, required) {
+        const reqAttr = required ? "required" : "";
+        return `
+    <div class="block ${required ? "required" : "optional"}" data-block="${index}">
+      <div class="block-label">
+        TIME BLOCK ${index} <span class="tag ${required ? "req" : "opt"}">${required ? "REQUIRED" : "OPTIONAL"}</span>
+        ${required ? "" : `<button type="button" class="remove-btn" data-remove="${index}">✕ Remove block</button>`}
+      </div>
+      <div class="block-row">
+        <div class="field">
+          <label>START TIME *</label>
+          <input type="time" data-role="start" data-block="${index}" ${reqAttr}>
+        </div>
+        <div class="field">
+          <label>END TIME *</label>
+          <input type="time" data-role="end" data-block="${index}" ${reqAttr}>
+        </div>
+        <div class="field seat-field">
+          <label>SEAT NO. *</label>
+          <input type="text" class="seat-input" placeholder="e.g. 46" data-role="seat" data-block="${index}" ${reqAttr}>
+        </div>
+      </div>
+      
+      <!-- Seat Recommendation Proposal Box -->
+      <div class="recommendation-box" data-role="rec-box" data-block="${index}" style="display:none; margin-top:12px; background:var(--bg); border:1.5px dashed var(--blue); border-radius:8px; padding:12px; box-shadow:var(--shadow-sm);">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div>
+              <span style="font-size: 10px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.03em;">Recommended Seat Proposal</span>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-top: 2px;">
+                Seat <span data-role="rec-seat"></span> &middot; <span data-role="rec-confidence" style="font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 10px; text-transform: uppercase;"></span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn btn-secondary" data-role="btn-accept-rec" data-block="${index}" onclick="selectProposalMode(${index}, true)" style="padding: 5px 10px; font-size: 11.5px; border-color: var(--blue); color: var(--blue); font-weight: 600;">Accept Proposal</button>
+              <button type="button" class="btn btn-secondary" data-role="btn-change-rec" data-block="${index}" onclick="selectProposalMode(${index}, false)" style="padding: 5px 10px; font-size: 11.5px;">Change Seat</button>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; border-top: 1px dashed var(--border-soft); padding-top: 6px;">
+            <div data-role="rec-tier-warn" style="display:none; margin-bottom:6px; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(217,119,6,0.1); color: var(--orange);"></div>
+            <ul data-role="rec-reasons" style="margin: 0; padding-left: 14px;"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="avail-wrap">
+        <span class="avail-label" data-role="avail-label" data-block="${index}">Enter a time range to see available seats &middot; <span data-role="duration"></span></span>
+        <div class="seat-scroll" data-role="avail-list" data-block="${index}"></div>
+      </div>
+    </div>
+  `;
+      }
+
+      async function fetchRecommendation(index) {
+        const genderSelect = document.getElementById("f_gender");
+        const gender = genderSelect ? genderSelect.value : "";
+        const startInput = document.querySelector(`input[data-role="start"][data-block="${index}"]`);
+        const endInput = document.querySelector(`input[data-role="end"][data-block="${index}"]`);
+        const seatInput = document.querySelector(`input[data-role="seat"][data-block="${index}"]`);
+        const recBox = document.querySelector(`div[data-role="rec-box"][data-block="${index}"]`);
+
+        if (!startInput || !endInput || !recBox || !seatInput) return;
+
+        const start = startInput.value;
+        const end = endInput.value;
+
+        if (!gender || !start || !end) {
+          recBox.style.display = "none";
+          return;
+        }
+
+        try {
+          const proposal = await api(`/seats/propose?gender=${gender}&start=${start}&end=${end}`);
+          if (proposal && proposal.proposed_seat) {
+            recBox.style.display = "block";
+            recBox.querySelector('[data-role="rec-seat"]').innerText = proposal.proposed_seat;
+            const confEl = recBox.querySelector('[data-role="rec-confidence"]');
+            confEl.innerText = proposal.confidence;
+            
+            if (proposal.confidence === 'High') {
+              confEl.style.background = 'rgba(26, 127, 55, 0.1)';
+              confEl.style.color = 'var(--green)';
+            } else if (proposal.confidence === 'Medium') {
+              confEl.style.background = 'rgba(217, 119, 6, 0.1)';
+              confEl.style.color = 'var(--orange)';
+            } else {
+              confEl.style.background = 'rgba(209, 38, 38, 0.1)';
+              confEl.style.color = 'var(--red)';
+            }
+
+            // Show tier warning when system had to compromise gender segregation
+            const tierWarn = recBox.querySelector('[data-role="rec-tier-warn"]');
+            if (tierWarn) {
+              if (proposal.tier >= 3) {
+                tierWarn.style.display = "block";
+                tierWarn.innerHTML = proposal.tier === 3
+                  ? '⚠️ Mixed section — no pure option available. Consider waiting for a seat to free up.'
+                  : '🚨 Last resort — only opposite-gender section available. Override required.';
+              } else {
+                tierWarn.style.display = "none";
+              }
+            }
+            const reasonsList = recBox.querySelector('[data-role="rec-reasons"]');
+            reasonsList.innerHTML = (proposal.reasons || [])
+              .map(r => `<li>${r}</li>`)
+              .join('');
+            
+            const blockEl = document.querySelector(`.block[data-block="${index}"]`);
+            if (blockEl) {
+              blockEl.setAttribute("data-proposed-seat", proposal.proposed_seat);
+            }
+
+            const currentSeatVal = seatInput.value.trim().toUpperCase();
+            if (currentSeatVal === "AUTO" || currentSeatVal === "" || currentSeatVal === proposal.proposed_seat.toUpperCase()) {
+              selectProposalMode(index, true, proposal.proposed_seat);
+            } else {
+              selectProposalMode(index, false, currentSeatVal);
+            }
+          } else {
+            recBox.style.display = "none";
+          }
+        } catch (err) {
+          console.error("Error fetching recommendation:", err);
+          recBox.style.display = "none";
+        }
+      }
+
+      window.selectProposalMode = function(index, accept, seatValue = '') {
+        const acceptBtn = document.querySelector(`button[data-role="btn-accept-rec"][data-block="${index}"]`);
+        const changeBtn = document.querySelector(`button[data-role="btn-change-rec"][data-block="${index}"]`);
+        const seatInput = document.querySelector(`input[data-role="seat"][data-block="${index}"]`);
+        const blockEl = document.querySelector(`.block[data-block="${index}"]`);
+        
+        if (!acceptBtn || !changeBtn || !seatInput || !blockEl) return;
+
+        const proposedSeat = blockEl.getAttribute("data-proposed-seat");
+
+        if (accept) {
+          acceptBtn.style.background = "var(--blue)";
+          acceptBtn.style.color = "#ffffff";
+          acceptBtn.style.borderColor = "transparent";
+          changeBtn.style.background = "var(--card-bg)";
+          changeBtn.style.color = "var(--text-muted)";
+          changeBtn.style.borderColor = "var(--border)";
+          
+          if (proposedSeat) {
+            seatInput.value = proposedSeat;
+            // Clear warning state if accepting proposal
+            blockEl.removeAttribute("data-override-reason");
+            blockEl.removeAttribute("data-has-warnings");
+          }
+          seatInput.readOnly = true;
+          seatInput.style.background = "var(--bg)";
+          seatInput.style.color = "var(--text-muted)";
+        } else {
+          changeBtn.style.background = "var(--blue)";
+          changeBtn.style.color = "#ffffff";
+          changeBtn.style.borderColor = "transparent";
+          acceptBtn.style.background = "var(--card-bg)";
+          acceptBtn.style.color = "var(--text-muted)";
+          acceptBtn.style.borderColor = "var(--border)";
+          
+          seatInput.readOnly = false;
+          seatInput.style.background = "var(--card-bg)";
+          seatInput.style.color = "var(--text)";
+          if (seatValue && seatValue !== proposedSeat) {
+            seatInput.value = seatValue;
+          }
+        }
+      };
+
+      async function validateSeatChange(index) {
+        const genderSelect = document.getElementById("f_gender");
+        const gender = genderSelect ? genderSelect.value : "";
+        const startInput = document.querySelector(`input[data-role="start"][data-block="${index}"]`);
+        const endInput = document.querySelector(`input[data-role="end"][data-block="${index}"]`);
+        const seatInput = document.querySelector(`input[data-role="seat"][data-block="${index}"]`);
+        
+        if (!startInput || !endInput || !seatInput) return;
+
+        const start = startInput.value;
+        const end = endInput.value;
+        const seatNo = seatInput.value.trim().toUpperCase();
+
+        if (!seatNo || seatNo === "AUTO" || !gender || !start || !end) return;
+
+        try {
+          const res = await api("/seats/validate-override", {
+            method: "POST",
+            body: JSON.stringify({ seat_number: seatNo, gender, start, end })
+          });
+
+          const blockEl = document.querySelector(`.block[data-block="${index}"]`);
+          if (!blockEl) return;
+          
+          if (res && !res.valid && res.violations && res.violations.length > 0) {
+            blockEl.removeAttribute("data-override-reason");
+            blockEl.setAttribute("data-has-warnings", "true");
+
+            const proposed = blockEl.getAttribute("data-proposed-seat") || "none";
+            const message = `Warning: Seat ${seatNo} has validation warnings:\n` + 
+                            res.violations.map(v => `• ${v}`).join("\n") + 
+                            `\n\nProposed safe seat: ${proposed}. Proceed anyway?`;
+
+            if (await customConfirm("Validation Warning", message)) {
+              const reason = await customPrompt("Override Reason", "Please enter the reason for choosing this seat over the recommended proposed seat:");
+              if (reason && reason.trim()) {
+                blockEl.setAttribute("data-override-reason", reason.trim());
+              } else {
+                await customAlert("Override Reason Required", "You must provide an override reason to proceed with this seat.");
+                seatInput.value = "";
+                blockEl.removeAttribute("data-override-reason");
+                blockEl.removeAttribute("data-has-warnings");
+              }
+            } else {
+              seatInput.value = "";
+              blockEl.removeAttribute("data-override-reason");
+              blockEl.removeAttribute("data-has-warnings");
+            }
+          } else {
+            blockEl.removeAttribute("data-override-reason");
+            blockEl.removeAttribute("data-has-warnings");
+          }
+        } catch (err) {
+          console.error("Error validating seat change:", err);
+        }
+      }
+
+      function openModal(regRequest = null) {
+        blockCount = 1;
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.id = "addStudentOverlay";
+        overlay.innerHTML = `
+    <div class="modal-card" style="max-width: 800px; width: 90%; height: 75vh; max-height: 620px; min-height: 480px; display: flex; flex-direction: column;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-soft); padding: 1.25rem 1.5rem 0.75rem 1.5rem;">
+        <div>
+          <h3 id="modalTitle" style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em;">Add Student</h3>
+          <p id="modalSubtitle" style="margin: 4px 0 0; font-size: 12px; color: var(--text-muted);">Fill in personal details and seat allocation, then save</p>
+        </div>
+        <!-- Header Profile Photo Window -->
+        <div id="f_headerAvatarContainer" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: var(--shadow-sm); flex-shrink: 0; display: none;" title="Student Profile Photo">
+          <span id="f_headerAvatarPlaceholder" style="font-size: 20px; color: var(--text-faint); line-height: 1; margin-top: -2px;">👤</span>
+          <img id="f_headerAvatarImg" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+        </div>
+      </div>
+      
+      <!-- Form Tabs Navigation (Fixed at top) -->
+      <div class="form-tabs" style="margin: 1rem 1.5rem 0.5rem 1.5rem;">
+        <button type="button" class="form-tab-btn active" onclick="switchModalTab(event, 0)">Profile</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 1)">Family & Address</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 2)">Qualifications</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 3)">Study & Timing</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 4)">Payment</button>
+        <button type="button" class="form-tab-btn" onclick="switchModalTab(event, 5)">Remarks</button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; padding: 0.5rem 1.5rem 1.5rem 1.5rem; flex: 1 1 auto;">
+        <div id="errorSlot"></div>
+
+        <!-- Tab 0: Profile -->
+        <div class="form-tab-content active" id="addTab-0">
+          <h4 class="form-section-title-compact">Student Information</h4>
+          <div class="form-grid-responsive">
+            <div class="field"><label>FORM NO.</label><input type="text" id="f_form_number"></div>
+            <div class="field"><label>CLASS</label><input type="text" id="f_class"></div>
+            <div class="field"><label>GOAL / EXAM</label><input type="text" id="f_goal"></div>
+          </div>
+          <div class="field" style="margin-top: 12px;"><label>NAME *</label><input type="text" id="f_name" required style="text-transform: uppercase;"></div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field">
+              <label>GENDER *</label>
+              <select id="f_gender" required style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text);">
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field"><label>DATE OF BIRTH *</label><input type="date" id="f_dob" required></div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>PHONE NUMBER *</label><input type="tel" id="f_phone" required placeholder="e.g. 9876543210"></div>
+            <div class="field"><label>WHATSAPP NUMBER</label><input type="text" id="f_whatsapp"></div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>EMAIL ADDRESS</label><input type="email" id="f_email"></div>
+            <div class="field"><label>AADHAAR NUMBER *</label><input type="text" id="f_aadhaar" required placeholder="12-digit number" maxlength="12" pattern="\\d{12}" title="Please enter exact 12-digit Aadhaar number"></div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>NATIONALITY</label><input type="text" id="f_nationality" value="Indian"></div>
+            <div class="field"><label>RELIGION</label><input type="text" id="f_religion"></div>
+            <div class="field" style="display: none;"><label>PHOTO PATH</label><input type="text" id="f_photo_path"></div>
+          </div>
+
+          <!-- Modern Photo Upload UI -->
+          <div class="field" style="display: flex; align-items: center; gap: 16px; margin-top: 12px; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-soft);">
+            <div id="f_photoPreviewContainer" style="width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--border); background: var(--card-bg); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+              <span id="f_photoPreviewPlaceholder" style="font-size: 24px; color: var(--text-faint); line-height: 1; margin-top: -2px;">👤</span>
+              <img id="f_photoPreviewImg" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1;">
+              <span style="font-size: 11.5px; font-weight: 600; color: var(--text);">Student Photo</span>
+              <span style="font-size: 10px; color: var(--text-faint);">Max size 5MB. Will be auto-compressed to save space.</span>
+            </div>
+            <button type="button" class="btn btn-secondary" id="f_photo_upload_btn" style="padding: 6px 12px; font-size: 12px;">Upload</button>
+            <button type="button" class="btn btn-danger" id="f_photo_remove_btn" style="padding: 6px 12px; font-size: 12px; display: none;">Remove</button>
+            <input type="file" id="f_photo_file" accept="image/*" style="display: none;">
+            <input type="hidden" id="f_photo_data">
+          </div>
+        </div>
+
+        <!-- Tab 1: Family & Address -->
+        <div class="form-tab-content" id="addTab-1">
+          <h4 class="form-section-title-compact">Family & Address Information</h4>
+          <div class="form-grid-responsive">
+            <div class="field"><label>FATHER NAME *</label><input type="text" id="f_father" required></div>
+            <div class="field"><label>MOTHER NAME *</label><input type="text" id="f_mother" required></div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>PARENT OCCUPATION</label><input type="text" id="f_parent_occupation"></div>
+            <div class="field"><label>EMERGENCY CONTACT</label><input type="text" id="f_emergency"></div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 16px; border-top: 1px solid var(--border-soft); padding-top: 16px;">
+            <div class="field"><label>VILLAGE / AREA *</label><input type="text" id="f_village" required></div>
+            <div class="field"><label>POST OFFICE (P.O.) *</label><input type="text" id="f_po" required></div>
+            <div class="field"><label>POLICE STATION (P.S.) *</label><input type="text" id="f_ps" required></div>
+          </div>
+          <div class="form-grid-responsive" style="margin-top: 12px;">
+            <div class="field"><label>DISTRICT *</label><input type="text" id="f_district" required></div>
+            <div class="field"><label>STATE *</label><input type="text" id="f_state" required value="Bihar"></div>
+            <div class="field"><label>PIN CODE *</label><input type="text" id="f_pin" required placeholder="e.g. 848125" pattern="\\d{6}" maxlength="6"></div>
+          </div>
+          <div class="field" style="display: none;">
+            <label>COMBINED ADDRESS (BACKWARD COMPATIBILITY)</label>
+            <input type="text" id="f_address">
+          </div>
+        </div>
+
+        <!-- Tab 2: Academic Qualifications -->
+        <div class="form-tab-content" id="addTab-2">
+          <h4 class="form-section-title-compact">Academic Qualifications History</h4>
+          <div style="overflow-x: auto;">
+            <table class="table-roomy" style="width:100%; min-width:500px; border-collapse:collapse; font-size:12.5px;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <th style="text-align:left; padding: 8px;">Exam / Class</th>
+                  <th style="text-align:left; padding: 8px;">Board / University</th>
+                  <th style="text-align:left; padding: 8px; width: 80px;">Year</th>
+                  <th style="text-align:left; padding: 8px; width: 100px;">Marks</th>
+                  <th style="text-align:left; padding: 8px; width: 80px;">Percentage %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <td style="padding: 8px; font-weight:600;">Matric (10th)</td>
+                  <td style="padding: 4px;"><input type="text" id="f_matric_board"></td>
+                  <td style="padding: 4px;"><input type="number" id="f_matric_year"></td>
+                  <td style="padding: 4px;"><input type="text" id="f_matric_marks"></td>
+                  <td style="padding: 4px;"><input type="number" id="f_matric_percent"></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <td style="padding: 8px; font-weight:600;">Intermediate (12th)</td>
+                  <td style="padding: 4px;"><input type="text" id="f_inter_board"></td>
+                  <td style="padding: 4px;"><input type="number" id="f_inter_year"></td>
+                  <td style="padding: 4px;"><input type="text" id="f_inter_marks"></td>
+                  <td style="padding: 4px;"><input type="number" id="f_inter_percent"></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-soft);">
+                  <td style="padding: 8px; font-weight:600;">Graduation</td>
+                  <td style="padding: 4px;"><input type="text" id="f_grad_board"></td>
+                  <td style="padding: 4px;"><input type="number" id="f_grad_year"></td>
+                  <td style="padding: 4px;"><input type="text" id="f_grad_marks"></td>
+                  <td style="padding: 4px;"><input type="number" id="f_grad_percent"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 3: Study & Timing -->
+        <div class="form-tab-content" id="addTab-3">
+          <h4 class="form-section-title-compact">Study & Timing Information</h4>
+          <div class="form-grid-responsive" id="f_joining_container">
+            <div class="field"><label>JOINING DATE *</label><input type="date" id="f_joining" required></div>
+          </div>
+          <div id="blocksContainer" style="margin-top: 16px;">
+            ${blockTemplate(1, true)}
+          </div>
+          <div class="add-block-btn" id="addBlockBtn" style="margin-top: 12px;">+ Add Another Time Block (optional)</div>
+        </div>
+
+        <!-- Tab 4: Payment -->
+        <div class="form-tab-content" id="addTab-4">
+          <h4 class="form-section-title-compact">Admission Payment Settlement</h4>
+          <div id="f_transition_notice" class="callout info" style="display: none; background: var(--blue-light); border: 1px solid #b6d4fb; color: #0550ae; padding: 12px; border-radius: 6px; font-size: 12.5px; line-height: 1.5; margin-bottom: 12px;">
+            <strong>Transition Mode Active:</strong> The billing system officially goes live in <strong><span id="f_op_month_label"></span></strong>. 
+            No billing or payment records will be generated in the system for this admission. Please collect any admission fees or pro-rated fees offline.
+          </div>
+          <div class="field" id="f_student_type_container" style="display: none; margin-bottom: 12px;">
+            <label>STUDENT TYPE *</label>
+            <select id="f_student_type" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text);">
+              <option value="new">New Admission (Pay Admission Fee Now)</option>
+              <option value="old">Old Student (Digitalization, No Payment Now)</option>
+            </select>
+          </div>
+          <div class="form-grid-responsive" id="f_payment_fields_grid">
+            <div class="field">
+              <label>PAYABLE AMOUNT (₹) *</label>
+              <input type="number" id="f_payable_amount" disabled style="background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text-muted); width: 100%; box-sizing: border-box;">
+              <p class="field-hint" style="font-size:11px;color:var(--text-faint);margin:4px 0 0;">Base Fee + Admission Fee</p>
+            </div>
+            <div class="field">
+              <label>AMOUNT PAID (₹) *</label>
+              <input type="number" id="f_amount_paid" required placeholder="e.g. 1150" min="0" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text);">
+            </div>
+            <div class="field">
+              <label>PAYMENT MODE *</label>
+              <select id="f_payment_mode" required style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text);">
+                <option value="Cash">Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>BILL NO *</label>
+              <input type="text" id="f_bill_number" required placeholder="4 or 5 digits" maxlength="5" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text);">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Remarks -->
+        <div class="form-tab-content" id="addTab-5">
+          <h4 class="form-section-title-compact">Remarks & Notes</h4>
+          <input type="text" id="f_remarks" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text);">
+          
+          <!-- Mandatory Policy & Accuracy Confirmation Checkbox -->
+          <div class="field" style="margin-top: 18px; display: flex; flex-direction: row; align-items: flex-start; gap: 8px;">
+            <input type="checkbox" id="f_policy_agreement" required style="width: auto; margin-top: 3px; cursor: pointer;" />
+            <label for="f_policy_agreement" style="font-size: 12px; color: var(--text-muted); line-height: 1.5; text-transform: none; font-weight: normal; cursor: pointer; user-select: none;">
+              I hereby declare that all the details filled in this application are true, accurate, and complete to the best of my knowledge. I recognize and agree to respect the institute's policies, reputation guidelines, and operational rules.
+            </label>
+          </div>
+
+          <div class="note" style="margin-top: 16px; font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
+            Duration and Fee Plan are calculated automatically from the time block(s) you enter.
+            Admin types the seat number manually into the SEAT NO. box — the chips above are a reference, not a dropdown.
+            The backend re-checks that the typed seat is actually available before saving.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveBtn">Save Student</button>
+      </div>
+    </div>
+  `;
+        document.body.appendChild(overlay);
+
+        if (regRequest) {
+          // Set Title & Description
+          const titleEl = document.getElementById("modalTitle");
+          const subtitleEl = document.getElementById("modalSubtitle");
+          if (titleEl) titleEl.innerText = "Review & Admit Registration Request";
+          if (subtitleEl) subtitleEl.innerText = "Review student details and finalize seat allocation timing";
+
+          // Pre-fill profile fields
+          document.getElementById("f_name").value = regRequest.name || "";
+          document.getElementById("f_gender").value = regRequest.gender || "";
+          document.getElementById("f_dob").value = regRequest.dob || "";
+          document.getElementById("f_phone").value = regRequest.phone || "";
+          document.getElementById("f_whatsapp").value = regRequest.whatsapp || "";
+          document.getElementById("f_email").value = regRequest.email || "";
+          document.getElementById("f_aadhaar").value = regRequest.aadhaar_number || "";
+          document.getElementById("f_father").value = regRequest.father_name || "";
+          document.getElementById("f_mother").value = regRequest.mother_name || "";
+          document.getElementById("f_emergency").value = regRequest.emergency_contact || "";
+          document.getElementById("f_joining").value = regRequest.joining_date || "";
+          
+          // Prefill new structured address fields if available
+          if (regRequest.address_village) document.getElementById("f_village").value = regRequest.address_village;
+          if (regRequest.address_po) document.getElementById("f_po").value = regRequest.address_po;
+          if (regRequest.address_ps) document.getElementById("f_ps").value = regRequest.address_ps;
+          if (regRequest.address_district) document.getElementById("f_district").value = regRequest.address_district;
+          if (regRequest.address_state) document.getElementById("f_state").value = regRequest.address_state;
+          if (regRequest.address_pin) document.getElementById("f_pin").value = regRequest.address_pin;
+          
+          // Prefill other fields if available
+          if (regRequest.form_number) document.getElementById("f_form_number").value = regRequest.form_number;
+          if (regRequest.class) document.getElementById("f_class").value = regRequest.class;
+          if (regRequest.parent_occupation) document.getElementById("f_parent_occupation").value = regRequest.parent_occupation;
+          if (regRequest.nationality) document.getElementById("f_nationality").value = regRequest.nationality;
+          if (regRequest.religion) document.getElementById("f_religion").value = regRequest.religion;
+          if (regRequest.goal) document.getElementById("f_goal").value = regRequest.goal;
+          if (regRequest.photo_path) document.getElementById("f_photo_path").value = regRequest.photo_path;
+
+          // Prefill qualifications if available
+          let regEdu = [];
+          try {
+            regEdu = JSON.parse(regRequest.education_history || "[]");
+          } catch (e) {
+            regEdu = [];
+          }
+          const getRegEdu = (level, key) => {
+            const item = regEdu.find(e => e.level === level) || {};
+            return item[key] || "";
+          };
+          document.getElementById("f_matric_board").value = getRegEdu("Matric", "board");
+          document.getElementById("f_matric_year").value = getRegEdu("Matric", "year");
+          document.getElementById("f_matric_marks").value = getRegEdu("Matric", "marks");
+          document.getElementById("f_matric_percent").value = getRegEdu("Matric", "percent");
+          document.getElementById("f_inter_board").value = getRegEdu("Intermediate", "board");
+          document.getElementById("f_inter_year").value = getRegEdu("Intermediate", "year");
+          document.getElementById("f_inter_marks").value = getRegEdu("Intermediate", "marks");
+          document.getElementById("f_inter_percent").value = getRegEdu("Intermediate", "percent");
+          document.getElementById("f_grad_board").value = getRegEdu("Graduation", "board");
+          document.getElementById("f_grad_year").value = getRegEdu("Graduation", "year");
+          document.getElementById("f_grad_marks").value = getRegEdu("Graduation", "marks");
+          document.getElementById("f_grad_percent").value = getRegEdu("Graduation", "percent");
+
+          // Prefill Time Block 1
+          const startInput = document.querySelector('input[data-role="start"][data-block="1"]');
+          const endInput = document.querySelector('input[data-role="end"][data-block="1"]');
+          const seatInput = document.querySelector('input[data-role="seat"][data-block="1"]');
+          if (startInput) startInput.value = regRequest.preferred_start_time;
+          if (endInput) endInput.value = regRequest.preferred_end_time;
+          if (seatInput) seatInput.value = regRequest.preferred_seat;
+
+          overlay.setAttribute("data-registration-id", regRequest.request_id);
+
+          document.getElementById("cancelBtn").onclick = closeModal;
+          overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) closeModal();
+          });
+          document.getElementById("addBlockBtn").onclick = addSecondBlock;
+          document.getElementById("saveBtn").onclick = saveStudent;
+
+          // Disable editing on profile tabs
+          const readonlyTabs = ["addTab-0", "addTab-1", "addTab-2"];
+          readonlyTabs.forEach(tabId => {
+            const container = document.getElementById(tabId);
+            if (container) {
+              const inputs = container.querySelectorAll("input, select, textarea");
+              inputs.forEach(input => {
+                input.disabled = true;
+                input.style.background = "var(--bg)";
+                input.style.color = "var(--text-muted)";
+                input.style.cursor = "not-allowed";
+              });
+            }
+          });
+
+          // Automatically satisfy and hide policy checkbox
+          const policyCheckbox = document.getElementById("f_policy_agreement");
+          if (policyCheckbox) {
+            policyCheckbox.checked = true;
+            const checkboxField = policyCheckbox.closest(".field");
+            if (checkboxField) {
+              checkboxField.style.display = "none";
+            }
+          }
+
+          // Render profile image in header
+          if (regRequest.photo_data && regRequest.photo_data.trim() !== "") {
+            const fHeaderImg = document.getElementById("f_headerAvatarImg");
+            const fHeaderPlaceholder = document.getElementById("f_headerAvatarPlaceholder");
+            const fHeaderContainer = document.getElementById("f_headerAvatarContainer");
+            if (fHeaderImg && fHeaderPlaceholder && fHeaderContainer) {
+              fHeaderImg.src = regRequest.photo_data;
+              fHeaderImg.style.display = "block";
+              fHeaderPlaceholder.style.display = "none";
+              fHeaderContainer.style.display = "flex";
+            }
+          }
+
+          attachBlockListeners(1);
+          refreshAvailability(1);
+          fetchRecommendation(1);
+        } else {
+          // Joining date auto-fills today, editable.
+          document.getElementById("f_joining").value = new Date()
+            .toISOString()
+            .slice(0, 10);
+
+          document.getElementById("cancelBtn").onclick = closeModal;
+          overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) closeModal();
+          });
+          document.getElementById("addBlockBtn").onclick = addSecondBlock;
+          document.getElementById("saveBtn").onclick = saveStudent;
+
+          attachBlockListeners(1);
+        }
+        // Setup photo uploader bindings for Add Student
+        const fFileInput = document.getElementById("f_photo_file");
+        const fUploadBtn = document.getElementById("f_photo_upload_btn");
+        const fRemoveBtn = document.getElementById("f_photo_remove_btn");
+        const fPreviewImg = document.getElementById("f_photoPreviewImg");
+        const fPlaceholder = document.getElementById("f_photoPreviewPlaceholder");
+        const fHiddenInput = document.getElementById("f_photo_data");
+
+        fUploadBtn.onclick = () => fFileInput.click();
+
+        setupPhotoUploader(fFileInput, fPreviewImg, fPlaceholder, fRemoveBtn, fHiddenInput);
+
+        // Auto calculate percentage for Matric, Intermediate, Graduation marks in Add Modal
+        setupAutoPercentage("f_matric_marks", "f_matric_percent");
+        setupAutoPercentage("f_inter_marks", "f_inter_percent");
+        setupAutoPercentage("f_grad_marks", "f_grad_percent");
+
+        if (regRequest && regRequest.photo_data && regRequest.photo_data.trim() !== "") {
+          // Prefill photo from registration request if available
+          fPreviewImg.src = regRequest.photo_data;
+          fPreviewImg.style.display = "block";
+          fPlaceholder.style.display = "none";
+          fHiddenInput.value = regRequest.photo_data;
+          fRemoveBtn.style.display = "inline-flex";
+        }
+
+        setupModalTransitionAndBranding();
+
+        const genderSelect = document.getElementById("f_gender");
+        if (genderSelect) {
+          genderSelect.addEventListener("change", () => {
+            document.querySelectorAll(".block").forEach((blockEl) => {
+              const idx = blockEl.getAttribute("data-block");
+              fetchRecommendation(idx);
+            });
+          });
+        }
+      }
+
+      function closeModal() {
+        const overlay = document.getElementById("addStudentOverlay");
+        if (overlay) overlay.remove();
+      }
+
+      async function setupModalTransitionAndBranding() {
+        try {
+          const settings = await api("/app-settings");
+          const currentMonth = new Date().toISOString().slice(0, 7);
+          const inTransition = settings.operational_start_month && currentMonth < settings.operational_start_month;
+          
+          const transitionNotice = document.getElementById("f_transition_notice");
+          const opMonthLabel = document.getElementById("f_op_month_label");
+          const typeContainer = document.getElementById("f_student_type_container");
+          const paymentGrid = document.getElementById("f_payment_fields_grid");
+          const joiningContainer = document.getElementById("f_joining_container");
+          const joiningInput = document.getElementById("f_joining");
+          
+          if (inTransition) {
+            if (transitionNotice) {
+              transitionNotice.style.display = "block";
+              if (opMonthLabel) {
+                opMonthLabel.innerText = formatMonthLabel(settings.operational_start_month);
+              }
+            }
+            if (typeContainer) typeContainer.style.display = "none";
+            if (paymentGrid) paymentGrid.style.display = "none";
+            if (joiningContainer) joiningContainer.style.display = "block";
+            if (joiningInput) joiningInput.disabled = false;
+          } else {
+            if (transitionNotice) transitionNotice.style.display = "none";
+            if (typeContainer) typeContainer.style.display = "none";
+            if (paymentGrid) paymentGrid.style.display = "grid";
+            if (joiningContainer) joiningContainer.style.display = "block";
+            if (joiningInput) {
+              joiningInput.value = new Date().toISOString().slice(0, 10);
+              joiningInput.disabled = true;
+            }
+          }
+        } catch (err) {
+          console.error("Failed to load settings in openModal:", err);
+        }
+      }
+
+      function addSecondBlock() {
+        if (blockCount >= 2) return;
+        blockCount = 2;
+        document
+          .getElementById("blocksContainer")
+          .insertAdjacentHTML("beforeend", blockTemplate(2, false));
+        document.getElementById("addBlockBtn").style.display = "none";
+        attachBlockListeners(2);
+      }
+
+      function attachBlockListeners(index) {
+        const startInput = document.querySelector(
+          `input[data-role="start"][data-block="${index}"]`,
+        );
+        const endInput = document.querySelector(
+          `input[data-role="end"][data-block="${index}"]`,
+        );
+        const seatInput = document.querySelector(
+          `input[data-role="seat"][data-block="${index}"]`,
+        );
+
+        const refresh = () => {
+          refreshAvailability(index);
+          fetchRecommendation(index);
+        };
+        if (startInput) startInput.addEventListener("change", refresh);
+        if (endInput) endInput.addEventListener("change", refresh);
+
+        if (seatInput) {
+          seatInput.addEventListener("blur", () => validateSeatChange(index));
+          seatInput.addEventListener("change", () => validateSeatChange(index));
+        }
+
+        document
+          .getElementById("blocksContainer")
+          .addEventListener("click", (e) => {
+            if (e.target.matches("[data-remove]")) {
+              const idx = e.target.getAttribute("data-remove");
+              document.querySelector(`.block[data-block="${idx}"]`).remove();
+              blockCount = 1;
+              document.getElementById("addBlockBtn").style.display = "flex";
+            }
+          });
+      }
+
+      // minutes-since-midnight duration calc, mirrors backend's normalizeRange logic
+      function calcDurationHours(start, end) {
+        const toMin = (t) => {
+          const [h, m] = t.split(":").map(Number);
+          return h * 60 + m;
+        };
+        let s = toMin(start),
+          e = toMin(end);
+        if (e <= s) e += 1440;
+        return (e - s) / 60;
+      }
+
+      window.selectSeatChip = function(index, seatNo) {
+        const seatInput = document.querySelector(`input[data-role="seat"][data-block="${index}"]`);
+        if (seatInput) {
+          seatInput.value = seatNo;
+          validateSeatChange(index);
+        }
+      };
+
+      async function refreshAvailability(index) {
+        const start = document.querySelector(
+          `input[data-role="start"][data-block="${index}"]`,
+        ).value;
+        const end = document.querySelector(
+          `input[data-role="end"][data-block="${index}"]`,
+        ).value;
+        const label = document.querySelector(
+          `[data-role="avail-label"][data-block="${index}"]`,
+        );
+        const list = document.querySelector(
+          `[data-role="avail-list"][data-block="${index}"]`,
+        );
+
+        if (!start || !end) return;
+
+        const hours = calcDurationHours(start, end);
+        label.innerHTML = `Available seats for <b>${start}–${end}</b> (<span data-role="duration">${hours}h</span>):`;
+        list.innerHTML = `<span style="color:#9AA3B2; font-family:monospace; font-size:11.5px;">checking...</span>`;
+
+        try {
+          const seats = await api(`/seats/available?start=${start}&end=${end}`);
+          list.innerHTML = seats.length
+            ? seats.map((s) => `<div class="seat-chip" style="cursor:pointer;" onclick="selectSeatChip(${index}, '${s}')">${s}</div>`).join("")
+            : `<div class="seat-chip empty">none free</div>`;
+        } catch (err) {
+          list.innerHTML = `<span style="color:#A32D2D; font-family:monospace; font-size:11.5px;">${err.message}</span>`;
+        }
+
+        updateFeePlanPreview();
+      }
+
+      let currentMonthlyFee = 0;
+      let currentAdmissionFee = 0;
+
+      async function updateFeePlanPreview() {
+        let totalHours = 0;
+        let hasTimes = false;
+
+        document.querySelectorAll(".block").forEach((blockEl) => {
+          const idx = blockEl.getAttribute("data-block");
+          const start_time = document.querySelector(
+            `input[data-role="start"][data-block="${idx}"]`
+          ).value;
+          const end_time = document.querySelector(
+            `input[data-role="end"][data-block="${idx}"]`
+          ).value;
+          if (start_time && end_time) {
+            totalHours += calcDurationHours(start_time, end_time);
+            hasTimes = true;
+          }
+        });
+
+        if (!hasTimes) {
+          currentMonthlyFee = 0;
+          const payableInput = document.getElementById("f_payable_amount");
+          if (payableInput) payableInput.value = "";
+          return;
+        }
+
+        try {
+          const [fees, settings] = await Promise.all([
+            api("/fees"),
+            api("/app-settings"),
+          ]);
+          const typeSelect = document.getElementById("f_student_type");
+          const isOld = typeSelect && typeSelect.value === "old";
+          currentAdmissionFee = isOld ? 0 : (settings.admission_fee || 0);
+          const match = fees.find((f) => f.hours_per_day === totalHours);
+          const note = document.querySelector(".note");
+          const payableInput = document.getElementById("f_payable_amount");
+          const amountPaidInput = document.getElementById("f_amount_paid");
+
+          if (match) {
+            currentMonthlyFee = match.monthly_fee;
+            const expected = currentMonthlyFee + currentAdmissionFee;
+            if (payableInput) {
+              payableInput.value = expected;
+            }
+            if (amountPaidInput && !amountPaidInput.value) {
+              amountPaidInput.value = expected;
+            }
+            if (note) {
+              note.innerHTML = `Duration: <b>${totalHours}h</b> &middot; Fee Plan (auto): <b>₹${match.monthly_fee}/month</b> (Admission Fee: ₹${currentAdmissionFee})`;
+            }
+          } else {
+            currentMonthlyFee = 0;
+            if (payableInput) payableInput.value = "";
+            if (note) {
+              note.innerHTML = `Duration: <b>${totalHours}h</b> &middot; <span style="color:#A32D2D;">No fee plan exists for ${totalHours}h — add one in Settings first.</span>`;
+            }
+          }
+        } catch (err) {
+          /* non-blocking preview, ignore errors */
+        }
+      }
+
+      function collectBlocks() {
+        const blocks = [];
+        document.querySelectorAll(".block").forEach((blockEl) => {
+          const idx = blockEl.getAttribute("data-block");
+          const start_time = document.querySelector(
+            `input[data-role="start"][data-block="${idx}"]`,
+          ).value;
+          const end_time = document.querySelector(
+            `input[data-role="end"][data-block="${idx}"]`,
+          ).value;
+          const seat_number = document.querySelector(
+            `input[data-role="seat"][data-block="${idx}"]`,
+          ).value;
+          if (start_time && end_time && seat_number) {
+            blocks.push({ start_time, end_time, seat_number });
+          }
+        });
+        return blocks;
+      }
+
+      function showError(msg) {
+        document.getElementById("errorSlot").innerHTML =
+          `<div class="error-banner">${msg}</div>`;
+      }
+
+      function showPartialPaymentWarning(expected, paid, onConfirm, onCancel) {
+        const warningOverlay = document.createElement("div");
+        warningOverlay.className = "modal-overlay";
+        warningOverlay.style.zIndex = "1000";
+        const diff = expected - paid;
+        warningOverlay.innerHTML = `
+          <div class="modal-card" style="max-width:400px; padding: 24px; text-align: center;">
+            <h3 style="color:var(--orange); margin: 0 0 12px; font-size:16px;">Warning: Partial Payment</h3>
+            <p style="font-size:13px; line-height:1.6; color:var(--text); margin-bottom:20px;">
+              The paid amount (<b>₹${paid}</b>) is less than the expected amount (<b>₹${expected}</b>).<br>
+              Do you want to write the remaining balance of <b>₹${diff}</b> to the student's dues?
+            </p>
+            <div style="display:flex; justify-content:center; gap:12px;">
+              <button class="btn btn-secondary" id="warnCancelBtn">Cancel</button>
+              <button class="btn btn-primary" id="warnConfirmBtn">Yes, write to dues</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(warningOverlay);
+        document.getElementById("warnCancelBtn").onclick = () => {
+          warningOverlay.remove();
+          onCancel();
+        };
+        document.getElementById("warnConfirmBtn").onclick = () => {
+          warningOverlay.remove();
+          onConfirm();
+        };
+      }
+
+      async function saveStudent() {
+        document.getElementById("errorSlot").innerHTML = "";
+
+        const agreement = document.getElementById('f_policy_agreement');
+        if (agreement && !agreement.checked) {
+          showError("You must confirm that the information is true and accept the institute policies to proceed.");
+          agreement.classList.add('invalid');
+          
+          // Automatically switch to Tab 5 (Remarks) so the admin can see and check it
+          const modalCard = document.querySelector('#addStudentOverlay .modal-card');
+          if (modalCard) {
+            const contents = modalCard.querySelectorAll('.form-tab-content');
+            const buttons = modalCard.querySelectorAll('.form-tab-btn');
+            contents.forEach((c, i) => c.classList.toggle('active', i === 5));
+            buttons.forEach((b, i) => b.classList.toggle('active', i === 5));
+          }
+          return;
+        } else if (agreement) {
+          agreement.classList.remove('invalid');
+        }
+
+        const blocks = collectBlocks();
+        if (blocks.length === 0) {
+          showError(
+            "Time Block 1 needs a start time, end time, and seat number.",
+          );
+          return;
+        }
+
+        const transitionNotice = document.getElementById("f_transition_notice");
+        const inTransition = transitionNotice && transitionNotice.style.display === "block";
+
+        const village = document.getElementById("f_village").value.trim();
+        const po = document.getElementById("f_po").value.trim();
+        const ps = document.getElementById("f_ps").value.trim();
+        const district = document.getElementById("f_district").value.trim();
+        const state = document.getElementById("f_state").value.trim();
+        const pin = document.getElementById("f_pin").value.trim();
+        let address = "";
+        if (village || po || ps || district || state || pin) {
+          address = `Village: ${village}, P.O.: ${po}, P.S.: ${ps}, Dist: ${district}, State: ${state} - ${pin}`;
+        } else {
+          address = document.getElementById("f_address").value.trim();
+        }
+
+        const education_history = [
+          {
+            level: "Matric",
+            board: document.getElementById("f_matric_board").value.trim(),
+            year: document.getElementById("f_matric_year").value.trim(),
+            marks: document.getElementById("f_matric_marks").value.trim(),
+            percent: document.getElementById("f_matric_percent").value.trim()
+          },
+          {
+            level: "Intermediate",
+            board: document.getElementById("f_inter_board").value.trim(),
+            year: document.getElementById("f_inter_year").value.trim(),
+            marks: document.getElementById("f_inter_marks").value.trim(),
+            percent: document.getElementById("f_inter_percent").value.trim()
+          },
+          {
+            level: "Graduation",
+            board: document.getElementById("f_grad_board").value.trim(),
+            year: document.getElementById("f_grad_year").value.trim(),
+            marks: document.getElementById("f_grad_marks").value.trim(),
+            percent: document.getElementById("f_grad_percent").value.trim()
+          }
+        ];
+
+        const payload = {
+          name: document.getElementById("f_name").value.trim(),
+          gender: document.getElementById("f_gender").value,
+          dob: document.getElementById("f_dob").value,
+          phone: document.getElementById("f_phone").value.trim(),
+          whatsapp: document.getElementById("f_whatsapp").value.trim(),
+          email: document.getElementById("f_email").value.trim(),
+          aadhaar_number: document.getElementById("f_aadhaar").value.trim(),
+          father_name: document.getElementById("f_father").value.trim(),
+          mother_name: document.getElementById("f_mother").value.trim(),
+          emergency_contact: document.getElementById("f_emergency").value.trim(),
+          address: address,
+          joining_date: document.getElementById("f_joining").value,
+          remarks: document.getElementById("f_remarks").value.trim(),
+          blocks,
+          amount_paid: inTransition ? 0 : Number(document.getElementById("f_amount_paid").value),
+          payment_mode: inTransition ? "Cash" : document.getElementById("f_payment_mode").value,
+          bill_number: inTransition ? "" : document.getElementById("f_bill_number").value.trim(),
+          is_old_student: inTransition ? true : false,
+          
+          form_number: document.getElementById("f_form_number").value.trim(),
+          class: document.getElementById("f_class").value.trim(),
+          parent_occupation: document.getElementById("f_parent_occupation").value.trim(),
+          nationality: document.getElementById("f_nationality").value.trim(),
+          religion: document.getElementById("f_religion").value.trim(),
+          goal: document.getElementById("f_goal").value.trim(),
+          photo_path: document.getElementById("f_photo_path").value.trim(),
+          photo_data: document.getElementById("f_photo_data").value.trim(),
+          address_village: village,
+          address_po: po,
+          address_ps: ps,
+          address_district: district,
+          address_state: state,
+          address_pin: pin,
+          education_history: JSON.stringify(education_history)
+        };
+
+        let overrideReason = null;
+        document.querySelectorAll(".block").forEach((blockEl) => {
+          const reason = blockEl.getAttribute("data-override-reason");
+          if (reason) {
+            overrideReason = reason;
+          }
+        });
+        if (overrideReason) {
+          payload.override_reason = overrideReason;
+          payload.admin_name = "Admin";
+        }
+
+        const overlay = document.getElementById("addStudentOverlay");
+        if (overlay) {
+          const regId = overlay.getAttribute("data-registration-id");
+          if (regId) {
+            payload.registration_id = Number(regId);
+          }
+        }
+
+        const requiredCheck = [
+          "name",
+          "gender",
+          "dob",
+          "phone",
+          "aadhaar_number",
+          "father_name",
+          "mother_name",
+          "address",
+        ];
+        if (!payload.is_old_student) {
+          requiredCheck.push("bill_number");
+        }
+        
+        const missing = requiredCheck.filter((k) => !payload[k]);
+        if (missing.length) {
+          showError(
+            `Please fill in all required fields: ${missing.join(", ")}.`,
+          );
+          return;
+        }
+
+        if (isNaN(payload.amount_paid) || payload.amount_paid < 0) {
+          showError("Amount paid must be a valid positive number.");
+          return;
+        }
+
+        if (!payload.is_old_student) {
+          if (!/^\d{4,5}$/.test(payload.bill_number)) {
+            showError("Bill number must be a 4 or 5 digit number.");
+            return;
+          }
+        }
+
+        const expected = Number(document.getElementById("f_payable_amount").value) || 0;
+
+        const proceedSave = async () => {
+          try {
+            await api("/students", {
+              method: "POST",
+              body: JSON.stringify(payload),
+            });
+            closeModal();
+            loadStudents();
+          } catch (err) {
+            showError(err.message);
+          }
+        };
+
+        if (!payload.is_old_student && payload.amount_paid < expected) {
+          showPartialPaymentWarning(expected, payload.amount_paid, proceedSave, () => {});
+        } else {
+          proceedSave();
+        }
+      }
+
+      document.getElementById("openModalBtn").onclick = () => openModal();
+
+      // ---------- Suspend & Archive Custom Modals ----------
+
+      function openSuspendModal(studentId, studentName, onConfirm) {
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.id = "suspendReasonOverlay";
+        overlay.innerHTML = `
+          <div class="modal-card" style="max-width: 450px; width: 100%;">
+            <div class="modal-header">
+              <h3>Suspend Student</h3>
+              <p style="margin: 4px 0 0;">STC-${String(studentId).padStart(4, "0")} &middot; ${studentName}</p>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+              <div id="suspendModalErrorSlot"></div>
+              <p style="margin-top: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted);">
+                Confirm suspending this student. Their active seat allocation(s) will be released and billing stopped.
+              </p>
+              <div class="field" style="margin-bottom: 0;">
+                <label style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: block; color: var(--text);">REASON OF SUSPENSION *</label>
+                <textarea id="suspendReasonInput" rows="3" placeholder="e.g. Fees overdue / Personal leave request" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text); resize: none; font-size: 13.5px;"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--border-soft);">
+              <button class="btn btn-secondary" id="suspendCancelBtn">Cancel</button>
+              <button class="btn btn-danger" id="suspendConfirmBtn" style="background-color: #dc2626; color: white;">Suspend Student</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const textarea = overlay.querySelector("#suspendReasonInput");
+        const confirmBtn = overlay.querySelector("#suspendConfirmBtn");
+        const cancelBtn = overlay.querySelector("#suspendCancelBtn");
+        const errorSlot = overlay.querySelector("#suspendModalErrorSlot");
+
+        textarea.focus();
+
+        cancelBtn.onclick = () => overlay.remove();
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) overlay.remove();
+        });
+
+        confirmBtn.onclick = async () => {
+          const reason = textarea.value.trim();
+          if (!reason) {
+            errorSlot.innerHTML = `<div class="error-banner" style="margin-bottom: 12px; font-size: 12px; padding: 8px 12px;">Suspension reason is mandatory.</div>`;
+            textarea.style.borderColor = "#dc2626";
+            return;
+          }
+          try {
+            confirmBtn.disabled = true;
+            confirmBtn.innerText = "Suspending...";
+            await onConfirm(reason);
+            overlay.remove();
+          } catch (err) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = "Suspend Student";
+            errorSlot.innerHTML = `<div class="error-banner" style="margin-bottom: 12px; font-size: 12px; padding: 8px 12px;">${err.message}</div>`;
+          }
+        };
+      }
+
+      function openArchiveModal(studentId, studentName, onConfirm) {
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.id = "archiveOverlay";
+        overlay.innerHTML = `
+          <div class="modal-card" style="max-width: 450px; width: 100%;">
+            <div class="modal-header">
+              <h3>Archive Student (Left Institute)</h3>
+              <p style="margin: 4px 0 0;">STC-${String(studentId).padStart(4, "0")} &middot; ${studentName}</p>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+              <div id="archiveModalErrorSlot"></div>
+              <p style="margin-top: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted);">
+                Confirm archiving this student. This indicates they have <b>left the institute</b>. Their active seat allocation(s) will be released and billing stopped permanently.
+              </p>
+              <div class="field" style="margin-bottom: 0;">
+                <label style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: block; color: var(--text);">LEAVING REMARKS / REASON (OPTIONAL)</label>
+                <textarea id="archiveReasonInput" rows="3" placeholder="e.g. Completed course / Relocated to another city" style="width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--card-bg); color: var(--text); resize: none; font-size: 13.5px;"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--border-soft);">
+              <button class="btn btn-secondary" id="archiveCancelBtn">Cancel</button>
+              <button class="btn btn-primary" id="archiveConfirmBtn">Archive Student</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const textarea = overlay.querySelector("#archiveReasonInput");
+        const confirmBtn = overlay.querySelector("#archiveConfirmBtn");
+        const cancelBtn = overlay.querySelector("#archiveCancelBtn");
+        const errorSlot = overlay.querySelector("#archiveModalErrorSlot");
+
+        textarea.focus();
+
+        cancelBtn.onclick = () => overlay.remove();
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) overlay.remove();
+        });
+
+        confirmBtn.onclick = async () => {
+          const reason = textarea.value.trim();
+          try {
+            confirmBtn.disabled = true;
+            confirmBtn.innerText = "Archiving...";
+            await onConfirm(reason);
+            overlay.remove();
+          } catch (err) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = "Archive Student";
+            errorSlot.innerHTML = `<div class="error-banner" style="margin-bottom: 12px; font-size: 12px; padding: 8px 12px;">${err.message}</div>`;
+          }
+        };
+      }
+
+      // ---------- Reactivate Modal (Suspended/Archived -> Active, requires fresh seat) ----------
+
+      async function openReactivateModal(studentId, studentName) {
+        let reactivateBlockCount = 1;
+        let reactivateStudentGender = null; // populated once prepare-reactivate resolves
+        
+        // Define Reactivate-specific block template
+        function reactivateBlockTemplate(index, required) {
+          return `
+            <div class="block ${required ? "required" : "optional"}" data-rblock="${index}">
+              <div class="block-label">
+                TIME BLOCK ${index} <span class="tag ${required ? "req" : "opt"}">${required ? "REQUIRED" : "OPTIONAL"}</span>
+                ${required ? "" : `<button type="button" class="remove-btn" data-rremove="${index}">✕ Remove block</button>`}
+              </div>
+              <div class="block-row">
+                <div class="field">
+                  <label>START TIME *</label>
+                  <input type="time" data-rrole="start" data-rblock="${index}">
+                </div>
+                <div class="field">
+                  <label>END TIME *</label>
+                  <input type="time" data-rrole="end" data-rblock="${index}">
+                </div>
+                <div class="field" style="grid-column: 1 / -1;">
+                  <label>SEAT NO.</label>
+                  <input type="text" class="seat-input" placeholder="e.g. A6" data-rrole="seat" data-rblock="${index}" style="width:100%; box-sizing:border-box;">
+                  <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button type="button" class="btn" style="padding:7px 18px; font-size:12px; background:var(--blue); color:white;" onclick="checkReactivateSeat(${index})">Check Seat</button>
+                    <button type="button" class="btn" style="padding:7px 18px; font-size:12px; background:var(--bg); color:var(--blue); border:1px solid var(--blue);" onclick="proposeReactivateSeat(${index})">Proposed</button>
+                  </div>
+                </div>
+              </div>
+              <div id="reactivateSeatWarning_${index}"></div>
+              <div class="avail-wrap">
+                <span class="avail-label" data-rrole="avail-label" data-rblock="${index}">Enter a time range to see available seats &middot; <span data-rrole="duration"></span></span>
+                <div class="seat-scroll" data-rrole="avail-list" data-rblock="${index}"></div>
+              </div>
+            </div>
+          `;
+        }
+
+        window.selectReactivateSeatChip = function(index, seatNo) {
+          const seatInput = document.querySelector(`input[data-rrole="seat"][data-rblock="${index}"]`);
+          if (seatInput) {
+            seatInput.value = seatNo;
+            maybeRunStep3();
+          }
+        };
+
+        async function refreshReactivateAvailability(index) {
+          const startInput = document.querySelector(`input[data-rrole="start"][data-rblock="${index}"]`);
+          const endInput = document.querySelector(`input[data-rrole="end"][data-rblock="${index}"]`);
+          const label = document.querySelector(`[data-rrole="avail-label"][data-rblock="${index}"]`);
+          const list = document.querySelector(`[data-rrole="avail-list"][data-rblock="${index}"]`);
+
+          if (!startInput || !endInput || !startInput.value || !endInput.value) return;
+          const start = startInput.value;
+          const end = endInput.value;
+
+          const hours = calcDurationHours(start, end);
+          label.innerHTML = `Available seats for <b>${start}–${end}</b> (<span data-rrole="duration">${hours}h</span>):`;
+          list.innerHTML = `<span style="color:#9AA3B2; font-family:monospace; font-size:11.5px;">checking...</span>`;
+
+          try {
+            const seats = await api(`/seats/available?start=${start}&end=${end}`);
+            list.innerHTML = seats.length
+              ? seats.map((s) => `<div class="seat-chip" style="cursor:pointer;" onclick="selectReactivateSeatChip(${index}, '${s}')">${s}</div>`).join("")
+              : `<div class="seat-chip empty">none free</div>`;
+          } catch (err) {
+            list.innerHTML = `<span style="color:#A32D2D; font-family:monospace; font-size:11.5px;">${err.message}</span>`;
+          }
+        }
+
+        function attachReactivateBlockListeners(index) {
+          const startInput = document.querySelector(`input[data-rrole="start"][data-rblock="${index}"]`);
+          const endInput = document.querySelector(`input[data-rrole="end"][data-rblock="${index}"]`);
+          const seatInput = document.querySelector(`input[data-rrole="seat"][data-rblock="${index}"]`);
+          if (!startInput || !endInput) return;
+
+          const refresh = () => refreshReactivateAvailability(index);
+          startInput.addEventListener("change", refresh);
+          endInput.addEventListener("change", refresh);
+          // Also re-run Step 3 when time changes (seat may already be typed)
+          startInput.addEventListener("change", maybeRunStep3);
+          endInput.addEventListener("change", maybeRunStep3);
+          // Handle manually typed seat number
+          if (seatInput) {
+            seatInput.addEventListener("change", maybeRunStep3);
+            seatInput.addEventListener("input", maybeRunStep3);
+          }
+        }
+
+        // Check Seat — validates a specific seat number against availability + gender rules
+        window.checkReactivateSeat = async function(index) {
+          const startInput = document.querySelector(`input[data-rrole="start"][data-rblock="${index}"]`);
+          const endInput   = document.querySelector(`input[data-rrole="end"][data-rblock="${index}"]`);
+          const seatInput  = document.querySelector(`input[data-rrole="seat"][data-rblock="${index}"]`);
+          const slot       = document.getElementById(`reactivateSeatWarning_${index}`);
+          if (!slot) return;
+
+          const seatNo = seatInput?.value?.trim();
+          const start  = startInput?.value;
+          const end    = endInput?.value;
+
+          if (!seatNo) {
+            slot.innerHTML = `<div class="warning-box" style="border-color:var(--red);background:rgba(239,68,68,0.06);color:var(--red);margin-top:8px;">⚠️ Please enter a seat number to check.</div>`;
+            return;
+          }
+          if (!start || !end) {
+            slot.innerHTML = `<div class="warning-box" style="border-color:var(--red);background:rgba(239,68,68,0.06);color:var(--red);margin-top:8px;">⚠️ Please set start and end time before checking the seat.</div>`;
+            return;
+          }
+
+          slot.innerHTML = `<div style="padding:8px 0;font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Checking seat ${seatNo}…</div>`;
+
+          try {
+            const res = await api(`/seats/validate-override`, {
+              method: "POST",
+              body: JSON.stringify({
+                seat_number: seatNo,
+                gender: reactivateStudentGender || "Other",
+                start,
+                end,
+                date: new Date().toISOString().slice(0, 10),
+                student_id: studentId
+              })
+            });
+
+            if (!res.valid) {
+              if (res.occupied) {
+                const byWhom = res.occupiedBy || "another student";
+                slot.innerHTML = `
+                  <div class="warning-box" style="border-color:var(--red);background:rgba(239,68,68,0.06);color:var(--red);margin-top:8px;">
+                    ❌ <b>Seat Unavailable:</b> Seat ${seatNo} is currently occupied by ${byWhom} during ${start}–${end}. Please choose a different seat or adjust the timing.
+                  </div>`;
+              } else {
+                slot.innerHTML = `
+                  <div class="warning-box" style="border-color:var(--orange);background:rgba(245,158,11,0.06);color:var(--orange);margin-top:8px;">
+                    ⚠️ <b>Segregation Advisory:</b> ${res.reason}<br>
+                    <div style="margin-top:8px;">
+                      <label style="font-size:11px;font-weight:600;color:var(--text);display:block;margin-bottom:4px;">ADMIN OVERRIDE REASON *</label>
+                      <textarea rows="2" placeholder="Reason for overriding segregation guideline…" style="width:100%;box-sizing:border-box;font-size:12.5px;border-radius:4px;border:1px solid var(--border);padding:6px;"></textarea>
+                    </div>
+                  </div>`;
+              }
+            } else {
+              slot.innerHTML = `
+                <div class="proposal-box" style="border-color:var(--green);background:rgba(16,185,129,0.06);color:var(--green);margin-top:8px;">
+                  ✅ <b>Seat Verified:</b> Seat ${seatNo} is vacant and complies with segregation guidelines.
+                </div>`;
+            }
+          } catch (err) {
+            slot.innerHTML = `<div class="warning-box" style="border-color:var(--red);background:rgba(239,68,68,0.06);color:var(--red);margin-top:8px;">❌ ${err.message}</div>`;
+          }
+        };
+
+        // Propose Seat — calls the gender-aware allocator and fills the seat input
+        window.proposeReactivateSeat = async function(index) {
+          const startInput = document.querySelector(`input[data-rrole="start"][data-rblock="${index}"]`);
+          const endInput   = document.querySelector(`input[data-rrole="end"][data-rblock="${index}"]`);
+          const seatInput  = document.querySelector(`input[data-rrole="seat"][data-rblock="${index}"]`);
+          const slot       = document.getElementById(`reactivateSeatWarning_${index}`);
+          if (!slot) return;
+
+          const start = startInput?.value;
+          const end   = endInput?.value;
+
+          if (!start || !end) {
+            slot.innerHTML = `<div class="warning-box" style="border-color:var(--red);background:rgba(239,68,68,0.06);color:var(--red);margin-top:8px;">⚠️ Please set start and end time before requesting a seat proposal.</div>`;
+            return;
+          }
+
+          slot.innerHTML = `<div style="padding:8px 0;font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Finding best available seat…</div>`;
+
+          try {
+            const gender  = reactivateStudentGender || "Other";
+            const dateVal = new Date().toISOString().slice(0, 10);
+            const prop    = await api(`/seats/propose?gender=${gender}&start=${start}&end=${end}&date=${dateVal}&excludeStudentId=${studentId}`);
+
+            if (prop.proposed_seat) {
+              if (seatInput) seatInput.value = prop.proposed_seat;
+              slot.innerHTML = `
+                <div class="proposal-box" style="border-color:var(--blue);background:rgba(59,130,246,0.06);color:var(--blue);margin-top:8px;">
+                  ✨ <b>Scorer Proposal:</b> Seat <b>${prop.proposed_seat}</b> recommended for this timing.<br>
+                  <span style="font-size:11.5px;opacity:0.8;">${prop.reasons?.[0] || ""}</span>
+                </div>`;
+              // Auto-run check on the proposed seat
+              window.checkReactivateSeat(index);
+            } else {
+              slot.innerHTML = `<div class="warning-box" style="border-color:var(--orange);background:rgba(245,158,11,0.06);color:var(--orange);margin-top:8px;">⚠️ No available seat found for this timing. Try adjusting the time range.</div>`;
+            }
+          } catch (err) {
+            slot.innerHTML = `<div class="warning-box" style="border-color:var(--red);background:rgba(239,68,68,0.06);color:var(--red);margin-top:8px;">❌ ${err.message}</div>`;
+          }
+        };
+
+        function collectReactivateBlocks() {
+          const blocks = [];
+          const seen = new Set();
+          document.querySelectorAll("[data-rblock]").forEach((blockEl) => {
+            const idx = blockEl.getAttribute("data-rblock");
+            if (seen.has(idx)) return;
+            seen.add(idx);
+            const startInput = document.querySelector(`input[data-rrole="start"][data-rblock="${idx}"]`);
+            const endInput = document.querySelector(`input[data-rrole="end"][data-rblock="${idx}"]`);
+            const seatInput = document.querySelector(`input[data-rrole="seat"][data-rblock="${idx}"]`);
+            if (startInput && endInput && seatInput) {
+              const start_time = startInput.value;
+              const end_time = endInput.value;
+              const seat_number = seatInput.value;
+              if (start_time && end_time && seat_number) {
+                blocks.push({ start_time, end_time, seat_number });
+              }
+            }
+          });
+          return blocks;
+        }
+
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.id = "reactivateOverlay";
+        overlay.innerHTML = `
+          <div class="modal-card" style="max-width: 800px; width: 90%;">
+            <div class="modal-header">
+              <h3>Reactivate ${studentName}</h3>
+              <p>Clear previous dues → assign new seat → pay current month (partial OK) → reactivate</p>
+            </div>
+            <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 20px;">
+              <div id="reactivateErrorSlot"></div>
+              
+              <!-- Suspension Reason Banner -->
+              <div id="suspensionReasonBanner" style="display: none; margin-bottom: 20px; padding: 12px; border-radius: 6px;"></div>
+              
+              <!-- Step 1: Previous Month Dues -->
+              <p class="form-section-label" style="margin-top: 0; font-weight:700; color:var(--blue);">STEP 1 — CLEAR PREVIOUS DUES</p>
+              
+              <div id="duesSectionLoading" style="padding: 20px; text-align: center; color: var(--text-muted); font-family: var(--font-mono);">
+                Loading previous month dues...
+              </div>
+
+              <div id="duesSectionContent" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; color: var(--text);">
+                    <input type="checkbox" id="chargeAdmissionFeeCheckbox" style="width: 16px; height: 16px; margin: 0;">
+                    Charge Re-admission Fee (<span id="admissionFeeAmountDisplay">₹0</span>)
+                  </label>
+                  <span style="font-size: 13px; color: var(--text-muted);">
+                    Total Unpaid Months: <span id="unpaidCountDisplay" style="font-weight: bold; color: var(--red);">0</span>
+                    <span id="suspensionThresholdDisplay" style="font-size: 11.5px; color: var(--text-faint); margin-left: 6px; font-weight: 500;"></span>
+                  </span>
+                </div>
+
+                <div class="card-flat" style="overflow-x: auto; margin-bottom: 16px;">
+                  <table class="table-roomy" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr style="font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border);">
+                        <th style="text-align: left; padding: 8px;">Month</th>
+                        <th style="text-align: right; padding: 8px;">Base Fee</th>
+                        <th style="text-align: right; padding: 8px;">Adm. Fee</th>
+                        <th style="text-align: right; padding: 8px;">Fine</th>
+                        <th style="text-align: right; padding: 8px;">Expected</th>
+                        <th style="text-align: right; padding: 8px;">Paid</th>
+                        <th style="text-align: right; padding: 8px;">Dues</th>
+                        <th style="text-align: center; padding: 8px;">Status</th>
+                        <th style="text-align: center; padding: 8px;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reactivateDuesRows">
+                      <!-- Dynamically populated -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Inline Payment Form (Slide down drawer) -->
+                <div id="reactivatePaymentDrawer" class="card-flat" style="display: none; border: 1px solid var(--border); padding: 16px; margin-bottom: 16px; background-color: var(--bg);">
+                  <h4 style="margin: 0 0 12px; font-size: 13px; font-weight: 600; color: var(--blue);">Record Payment for <span id="paymentDrawerMonth">June</span></h4>
+                  <div id="drawerErrorSlot"></div>
+                  <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                    <div class="field" style="margin: 0; display:flex; flex-direction:column; justify-content:center;">
+                      <label style="font-size:11px; color:var(--text-muted);">OUTSTANDING DUE</label>
+                      <span id="paymentExpectedAmount" style="font-size:16px; font-weight: 700; color:var(--red);">₹0</span>
+                    </div>
+                    <div class="field" style="margin: 0;">
+                      <label>AMOUNT PAID (₹) *</label>
+                      <input type="number" id="drawerAmountPaid" min="0" placeholder="e.g. 500" style="padding: 6px 10px;">
+                    </div>
+                    <div class="field" style="margin: 0;">
+                      <label>PAYMENT MODE *</label>
+                      <select id="drawerPaymentMode" style="padding: 6px 10px; height: 34px;">
+                        <option value="UPI">UPI</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div class="field" style="margin: 0;">
+                      <label>BILL NO *</label>
+                      <input type="text" id="drawerBillNumber" placeholder="4 or 5 digits" maxlength="5" style="padding: 6px 10px;">
+                    </div>
+                  </div>
+                  <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button class="btn btn-secondary" id="drawerCancelBtn" style="padding: 6px 12px; font-size: 12px;">Cancel</button>
+                    <button class="btn btn-primary" id="drawerSaveBtn" style="padding: 6px 12px; font-size: 12px;">Confirm Payment</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="duesWarningBanner" class="error-banner" style="margin-bottom: 20px; font-weight: 600; display: none;">
+                Warning: Please clear all previous month dues to unlock seat allocation
+              </div>
+              <div id="duesSuccessBanner" style="display: none; padding: 10px 14px; background-color: var(--green-light); border: 1px solid var(--green); border-radius: 6px; color: var(--green); margin-bottom: 20px; font-weight: 600; text-align: center;">
+                Previous dues cleared! Assign a seat below.
+              </div>
+
+              <!-- Step 2: Seat Allocation Section -->
+              <div id="seatSectionWrapper" style="opacity: 0.4; pointer-events: none; transition: opacity 0.3s ease;">
+                <p class="form-section-label" style="font-weight:700; color:var(--blue);">STEP 2 — SEAT ALLOCATION</p>
+                <div id="reactivateBlocksContainer">
+                  <!-- BlockTemplate will go here -->
+                </div>
+                <div class="add-block-btn" id="reactivateAddBlockBtn" style="margin-bottom: 12px;">+ Add Another Time Block (optional)</div>
+                <div class="note" style="margin-top: 8px;">Their old seat may already belong to someone else — pick any seat that's currently available for the chosen time.</div>
+              </div>
+
+              <!-- Step 3: Current Month Bill (shown after seat is selected) -->
+              <div id="currentMonthBillSection" style="display: none; margin-top: 20px;">
+                <p class="form-section-label" style="font-weight:700; color:var(--blue);">STEP 3 — CURRENT MONTH PAYMENT</p>
+                <div id="currentMonthBillLoading" style="padding: 12px; color: var(--text-muted); font-family: var(--font-mono); display: none;">
+                  Calculating fee for new timing...
+                </div>
+                <div id="currentMonthBillContent" style="display: none;">
+                  <div class="card-flat" style="overflow-x: auto; margin-bottom: 16px;">
+                    <table class="table-roomy" style="width: 100%; border-collapse: collapse;">
+                      <thead>
+                        <tr style="font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border);">
+                          <th style="text-align: left; padding: 8px;">Month</th>
+                          <th style="text-align: right; padding: 8px;">Base Fee</th>
+                          <th style="text-align: right; padding: 8px;">Adm. Fee</th>
+                          <th style="text-align: right; padding: 8px;">Expected</th>
+                          <th style="text-align: right; padding: 8px;">Paid</th>
+                          <th style="text-align: right; padding: 8px;">Dues</th>
+                          <th style="text-align: center; padding: 8px;">Status</th>
+                          <th style="text-align: center; padding: 8px;">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="currentMonthBillRow"></tbody>
+                    </table>
+                  </div>
+                  <!-- Current month payment drawer -->
+                  <div id="currentMonthPaymentDrawer" class="card-flat" style="display: none; border: 1px solid var(--border); padding: 16px; margin-bottom: 16px; background-color: var(--bg);">
+                    <h4 style="margin: 0 0 12px; font-size: 13px; font-weight: 600; color: var(--blue);">Pay Current Month <span id="currentMonthLabel"></span></h4>
+                    <div id="currentMonthDrawerError"></div>
+                    <div class="note" style="margin-bottom: 10px; color: var(--text-muted);">Partial payment is allowed — remaining balance will stay as due after reactivation.</div>
+                    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                      <div class="field" style="margin: 0; display:flex; flex-direction:column; justify-content:center;">
+                        <label style="font-size:11px; color:var(--text-muted);">TOTAL DUE</label>
+                        <span id="currentMonthTotalDue" style="font-size:16px; font-weight: 700; color:var(--red);">₹0</span>
+                      </div>
+                      <div class="field" style="margin: 0;">
+                        <label>AMOUNT PAID (₹)</label>
+                        <input type="number" id="currentMonthAmountPaid" min="0" placeholder="e.g. 1000" style="padding: 6px 10px;">
+                      </div>
+                      <div class="field" style="margin: 0;">
+                        <label>PAYMENT MODE</label>
+                        <select id="currentMonthPaymentMode" style="padding: 6px 10px; height: 34px;">
+                          <option value="UPI">UPI</option>
+                          <option value="Cash">Cash</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div class="field" style="margin: 0;">
+                        <label>BILL NO</label>
+                        <input type="text" id="currentMonthBillNumber" placeholder="4 or 5 digits" maxlength="5" style="padding: 6px 10px;">
+                      </div>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                      <button class="btn btn-secondary" id="currentMonthDrawerCancelBtn" style="padding: 6px 12px; font-size: 12px;">Skip</button>
+                      <button class="btn btn-primary" id="currentMonthDrawerSaveBtn" style="padding: 6px 12px; font-size: 12px;">Confirm Payment</button>
+                    </div>
+                  </div>
+                  <div id="currentMonthPaidBanner" style="display: none; padding: 10px 14px; background-color: var(--green-light); border: 1px solid var(--green); border-radius: 6px; color: var(--green); margin-bottom: 16px; font-weight: 600; text-align: center;">
+                    Current month payment recorded!
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
+              <button class="btn btn-primary" id="saveBtn" disabled style="opacity: 0.5;">Reactivate Student</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById("cancelBtn").onclick = () => overlay.remove();
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) overlay.remove();
+        });
+
+        // Setup blocks container
+        document.getElementById("reactivateBlocksContainer").innerHTML = reactivateBlockTemplate(1, true);
+        attachReactivateBlockListeners(1);
+
+
+        document.getElementById("reactivateAddBlockBtn").onclick = () => {
+          if (reactivateBlockCount >= 2) return;
+          reactivateBlockCount = 2;
+          document.getElementById("reactivateBlocksContainer").insertAdjacentHTML("beforeend", reactivateBlockTemplate(2, false));
+          document.getElementById("reactivateAddBlockBtn").style.display = "none";
+          attachReactivateBlockListeners(2);
+        };
+
+        // Remove block listener
+        document.getElementById("reactivateBlocksContainer").addEventListener("click", (e) => {
+          if (e.target.matches("[data-rremove]")) {
+            const idx = e.target.getAttribute("data-rremove");
+            const blockEl = document.querySelector(`.block[data-rblock="${idx}"]`);
+            if (blockEl) blockEl.remove();
+            reactivateBlockCount = 1;
+            document.getElementById("reactivateAddBlockBtn").style.display = "flex";
+          }
+        });
+
+        // Let's load the data from prepare-reactivate endpoint
+        let unpaidBills = []; // previous months only
+        let admissionFeeSetting = 0;
+        let currentMonthStr = "";
+        let currentMonthBillingId = null; // set after seat selection + prepare-current-month-bill
+        // Tracks billing_ids paid during this reactivation session (for receipt link)
+        const paidBillingIds = new Set();
+
+        async function fetchPreReactivate() {
+          document.getElementById("duesSectionLoading").style.display = "block";
+          document.getElementById("duesSectionContent").style.display = "none";
+          document.getElementById("duesWarningBanner").style.display = "none";
+          document.getElementById("duesSuccessBanner").style.display = "none";
+          
+          try {
+            const data = await api(`/students/${studentId}/prepare-reactivate`, { method: "POST" });
+            unpaidBills = data.prevMonthsUnpaid || [];
+            admissionFeeSetting = data.defaultAdmissionFee || 0;
+            currentMonthStr = data.currentMonth || "";
+            reactivateStudentGender = data.student?.gender || null;
+            
+            document.getElementById("admissionFeeAmountDisplay").innerText = `₹${admissionFeeSetting}`;
+            document.getElementById("duesSectionLoading").style.display = "none";
+            document.getElementById("duesSectionContent").style.display = "block";
+            
+            // Display suspension reason if student is Suspended
+            const banner = document.getElementById("suspensionReasonBanner");
+            const threshold = data.suspensionThreshold || 1;
+            const thresholdEl = document.getElementById("suspensionThresholdDisplay");
+            if (thresholdEl) {
+              thresholdEl.innerText = `(Limit: ${threshold} month${threshold > 1 ? 's' : ''})`;
+            }
+
+            if (banner) {
+              if (data.student && data.student.status === "Suspended") {
+                const type = data.student.suspension_type || "system";
+                const rawReason = data.student.suspension_reason || "No reason specified.";
+                const reason = rawReason.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                banner.style.display = "block";
+                
+                if (type === "admin") {
+                  banner.style.backgroundColor = "rgba(245, 158, 11, 0.15)";
+                  banner.style.border = "1px solid rgba(245, 158, 11, 0.4)";
+                  banner.style.color = "#d97706";
+                  banner.innerHTML = `
+                    <div style="font-weight: 700; font-size: 13px; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                      Admin Suspended
+                    </div>
+                    <div style="font-size: 13.5px; line-height: 1.4; color: var(--text);">
+                      <b>Reason:</b> ${reason}
+                    </div>
+                  `;
+                } else {
+                  banner.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
+                  banner.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+                  banner.style.color = "#dc2626";
+                  banner.innerHTML = `
+                    <div style="font-weight: 700; font-size: 13px; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                      System Suspended
+                    </div>
+                    <div style="font-size: 13.5px; line-height: 1.4; color: var(--text);">
+                      <b>Reason:</b> ${reason} <span style="font-size: 11px; color: var(--text-muted); font-weight: normal; margin-left: 4px;">(Threshold limit: ${threshold} month${threshold > 1 ? 's' : ''})</span>
+                    </div>
+                  `;
+                }
+              } else {
+                banner.style.display = "none";
+              }
+            }
+            
+            // Check if there's a prior current month bill with admission fee already set
+            const checkbox = document.getElementById("chargeAdmissionFeeCheckbox");
+            if (data.currentMonthRecord && data.currentMonthRecord.admission_fee > 0) {
+              checkbox.checked = true;
+            } else {
+              checkbox.checked = false;
+            }
+
+            renderDuesTable();
+          } catch (err) {
+            document.getElementById("duesSectionLoading").innerText = `Failed to load dues: ${err.message}`;
+            document.getElementById("duesSectionLoading").style.color = "var(--red)";
+          }
+        }
+
+        // Toggling admission fee checkbox
+        document.getElementById("chargeAdmissionFeeCheckbox").addEventListener("change", async (e) => {
+          const checked = e.target.checked;
+          // If current month bill exists (after step 3 ran), update it
+          if (currentMonthBillingId) {
+            const targetFee = checked ? admissionFeeSetting : 0;
+            try {
+              await api(`/payments/${currentMonthBillingId}/admission-fee`, {
+                method: "PUT",
+                body: JSON.stringify({ admission_fee: targetFee })
+              });
+              // Re-render current month bill row
+              await refreshCurrentMonthBill();
+            } catch (err) {
+              await customAlert("Error", `Failed to update admission fee: ${err.message}`);
+              e.target.checked = !checked;
+            }
+          }
+          // If step 3 hasn't run yet, the flag is just remembered and applied when prepare-current-month-bill runs
+        });
+
+        // Helper to refresh previous month dues without resetting inputs
+        async function refreshDuesOnly() {
+          try {
+            const data = await api(`/students/${studentId}/prepare-reactivate`, { method: "POST" });
+            unpaidBills = data.prevMonthsUnpaid || [];
+            renderDuesTable();
+          } catch (err) {
+            console.error("Error refreshing dues", err);
+          }
+        }
+
+        // Refresh current month bill display after payment/admission-fee change
+        async function refreshCurrentMonthBill() {
+          if (!currentMonthBillingId) return;
+          const blocks = collectReactivateBlocks();
+          if (blocks.length === 0) return;
+          try {
+            const data = await api(`/students/${studentId}/prepare-current-month-bill`, {
+              method: "POST",
+              body: JSON.stringify({ blocks })
+            });
+            currentMonthBillingId = data.currentMonthRecord.billing_id;
+            renderCurrentMonthBillRow(data.currentMonthRecord);
+          } catch (err) {
+            console.error("Error refreshing current month bill", err);
+          }
+        }
+
+        function renderDuesTable() {
+          const tbody = document.getElementById("reactivateDuesRows");
+          
+          if (unpaidBills.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--green); padding: 12px; font-weight: bold;">No outstanding dues. Proceed!</td></tr>`;
+            document.getElementById("unpaidCountDisplay").innerText = "0";
+            document.getElementById("unpaidCountDisplay").style.color = "var(--green)";
+            updateWizardState(true);
+            return;
+          }
+
+          let hasOutstandingDues = false;
+          let totalUnpaid = 0;
+
+          tbody.innerHTML = unpaidBills.map(b => {
+            const expected = b.base_fee + b.admission_fee + b.fine_amount;
+            const paid = b.amount_paid || 0;
+            const due = b.due_amount;
+            
+            if (due > 0) {
+              hasOutstandingDues = true;
+              totalUnpaid++;
+            }
+
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const [y, m] = b.billing_month.split("-");
+            const monthLabel = `${monthNames[parseInt(m) - 1]} ${y}`;
+
+            // Show "Pay" button if due > 0, otherwise show "Settled" + receipt link if paid in this session
+            let actionBtn;
+            if (due > 0) {
+              actionBtn = `<button class="btn btn-primary pay-month-btn" data-billing-id="${b.billing_id}" data-month="${b.billing_month}" data-due="${due}" style="padding: 2px 8px; font-size: 11px;">Pay</button>`;
+            } else if (paidBillingIds.has(b.billing_id)) {
+              actionBtn = `<span style="color: var(--green); font-weight: 600;">Settled</span> <button class="link-btn print-receipt-btn" data-billing-id="${b.billing_id}" title="Print receipt" style="margin-left:6px; font-size:11px; color:var(--blue); background:none; border:none; cursor:pointer; text-decoration:underline; font-family:var(--font-mono);">Receipt</button>`;
+            } else {
+              actionBtn = `<span style="color: var(--green); font-weight: 600;">Settled</span>`;
+            }
+
+            return `
+              <tr style="border-bottom: 1px solid var(--border-soft);">
+                <td style="padding: 8px; text-align: left; font-weight: 600; color: var(--text);">${monthLabel}</td>
+                <td class="mono" style="padding: 8px; text-align: right;">₹${b.base_fee}</td>
+                <td class="mono" style="padding: 8px; text-align: right; color: ${b.admission_fee > 0 ? 'var(--blue)' : 'var(--text-muted)'};">₹${b.admission_fee}</td>
+                <td class="mono" style="padding: 8px; text-align: right; color: ${b.fine_amount > 0 ? 'var(--red)' : 'var(--text-muted)'};">₹${b.fine_amount}</td>
+                <td class="mono" style="padding: 8px; text-align: right; font-weight: 600;">₹${expected}</td>
+                <td class="mono" style="padding: 8px; text-align: right; color: var(--green);">₹${paid}</td>
+                <td class="mono" style="padding: 8px; text-align: right; font-weight: 700; color: ${due > 0 ? 'var(--red)' : 'var(--green)'};">₹${due}</td>
+                <td style="padding: 8px; text-align: center;">${statusBadge(b.status)}</td>
+                <td style="padding: 8px; text-align: center;">${actionBtn}</td>
+              </tr>
+            `;
+          }).join("");
+
+          document.getElementById("unpaidCountDisplay").innerText = totalUnpaid;
+          document.getElementById("unpaidCountDisplay").style.color = totalUnpaid > 0 ? "var(--red)" : "var(--green)";
+
+          updateWizardState(!hasOutstandingDues);
+        }
+
+        // Action when clicking "Pay" or "Receipt" on a month row
+        document.getElementById("reactivateDuesRows").addEventListener("click", (e) => {
+          if (e.target.classList.contains("pay-month-btn")) {
+            const billingId = e.target.getAttribute("data-billing-id");
+            const month = e.target.getAttribute("data-month");
+            const due = e.target.getAttribute("data-due");
+            openPaymentDrawer(billingId, month, due);
+          }
+          if (e.target.classList.contains("print-receipt-btn")) {
+            const billingId = Number(e.target.getAttribute("data-billing-id"));
+            openReceiptForReactivation(billingId);
+          }
+        });
+
+        const drawer = document.getElementById("reactivatePaymentDrawer");
+        const drawerError = document.getElementById("drawerErrorSlot");
+
+        function openPaymentDrawer(billingId, month, due) {
+          drawerError.innerHTML = "";
+          document.getElementById("paymentDrawerMonth").innerText = month;
+          document.getElementById("paymentExpectedAmount").innerText = `₹${due}`;
+          document.getElementById("drawerAmountPaid").value = due; // Default to full due amount
+          document.getElementById("drawerBillNumber").value = "";
+
+          // Set confirm button label to show the month being paid
+          const fullMonthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+          const [my, mm] = month.split("-");
+          const monthLabel = my ? `${fullMonthNames[parseInt(mm) - 1]} ${my}` : month;
+          document.getElementById("drawerSaveBtn").textContent = `Confirm — ${monthLabel}`;
+
+          drawer.style.display = "block";
+          drawer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+          // Save handler inside drawer
+          document.getElementById("drawerSaveBtn").onclick = async () => {
+            drawerError.innerHTML = "";
+            const amountPaid = Number(document.getElementById("drawerAmountPaid").value);
+            const paymentMode = document.getElementById("drawerPaymentMode").value;
+            const billNumber = document.getElementById("drawerBillNumber").value.trim();
+
+            if (isNaN(amountPaid) || amountPaid <= 0) {
+              drawerError.innerHTML = `<div class="error-banner" style="margin-bottom: 8px; font-size: 12px; padding: 4px 8px;">Amount paid must be a valid positive number.</div>`;
+              return;
+            }
+            if (!/^\d{4,5}$/.test(billNumber)) {
+              drawerError.innerHTML = `<div class="error-banner" style="margin-bottom: 8px; font-size: 12px; padding: 4px 8px;">Bill number must be a 4 or 5 digit number.</div>`;
+              return;
+            }
+
+            const recordPayment = async () => {
+              try {
+                await api(`/payments/${billingId}/pay`, {
+                  method: "POST",
+                  body: JSON.stringify({
+                    amount_paid: amountPaid,
+                    payment_mode: paymentMode,
+                    bill_number: billNumber
+                  })
+                });
+                drawer.style.display = "none";
+                // Track that this billing record now has a receipt available
+                paidBillingIds.add(Number(billingId));
+                await refreshDuesOnly();
+              } catch (err) {
+                drawerError.innerHTML = `<div class="error-banner" style="margin-bottom: 8px; font-size: 12px; padding: 4px 8px;">${err.message}</div>`;
+              }
+            };
+
+            if (amountPaid < due) {
+              showPartialPaymentWarning(due, amountPaid, recordPayment, () => {});
+            } else {
+              recordPayment();
+            }
+          };
+
+          document.getElementById("drawerCancelBtn").onclick = () => {
+            drawer.style.display = "none";
+          };
+        }
+
+        function updateWizardState(duesCleared) {
+          const warningBanner = document.getElementById("duesWarningBanner");
+          const successBanner = document.getElementById("duesSuccessBanner");
+          const seatWrapper = document.getElementById("seatSectionWrapper");
+          const saveBtn = document.getElementById("saveBtn");
+
+          if (duesCleared) {
+            warningBanner.style.display = "none";
+            successBanner.style.display = "block";
+            
+            // Unlock seat allocation (Step 2)
+            seatWrapper.style.opacity = "1";
+            seatWrapper.style.pointerEvents = "auto";
+            
+            // Save button stays disabled until Step 3 completes (seat selected + current month bill generated)
+            // It will be enabled in renderCurrentMonthBillRow
+          } else {
+            warningBanner.style.display = "block";
+            successBanner.style.display = "none";
+            
+            // Lock seat allocation
+            seatWrapper.style.opacity = "0.4";
+            seatWrapper.style.pointerEvents = "none";
+            
+            // Disable save reactivate button
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = "0.5";
+            
+            // Also hide step 3 if dues became outstanding again
+            document.getElementById("currentMonthBillSection").style.display = "none";
+            currentMonthBillingId = null;
+          }
+        }
+
+        // Render current month bill row in Step 3
+        function renderCurrentMonthBillRow(rec) {
+          const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          const [y, m] = rec.billing_month.split("-");
+          const monthLabel = `${monthNames[parseInt(m)-1]} ${y}`;
+          const expected = rec.base_fee + rec.admission_fee + rec.fine_amount;
+          const paid = rec.amount_paid || 0;
+          const due = rec.due_amount;
+
+          let actionBtn;
+          if (due > 0) {
+            actionBtn = `<button class="btn btn-primary pay-curmonth-btn" style="padding: 2px 8px; font-size: 11px;">Pay</button>`;
+          } else {
+            actionBtn = `<span style="color: var(--green); font-weight: 600;">Paid</span>`;
+          }
+
+          document.getElementById("currentMonthBillRow").innerHTML = `
+            <tr style="border-bottom: 1px solid var(--border-soft);">
+              <td style="padding: 8px; text-align: left; font-weight: 600; color: var(--text);">${monthLabel} <span style="font-size:10px; color:var(--blue); font-weight:700; margin-left:4px;">NEW</span></td>
+              <td class="mono" style="padding: 8px; text-align: right;">₹${rec.base_fee}</td>
+              <td class="mono" style="padding: 8px; text-align: right; color: ${rec.admission_fee > 0 ? 'var(--blue)' : 'var(--text-muted)'};">₹${rec.admission_fee}</td>
+              <td class="mono" style="padding: 8px; text-align: right; font-weight: 600;">₹${expected}</td>
+              <td class="mono" style="padding: 8px; text-align: right; color: var(--green);">₹${paid}</td>
+              <td class="mono" style="padding: 8px; text-align: right; font-weight: 700; color: ${due > 0 ? 'var(--red)' : 'var(--green)'};">₹${due}</td>
+              <td style="padding: 8px; text-align: center;">${statusBadge(rec.status)}</td>
+              <td style="padding: 8px; text-align: center;">${actionBtn}</td>
+            </tr>
+          `;
+
+          // Wire pay button
+          const payBtn = document.getElementById("currentMonthBillRow").querySelector(".pay-curmonth-btn");
+          if (payBtn) {
+            payBtn.onclick = () => openCurrentMonthPaymentDrawer(rec.billing_id, monthLabel, due);
+          }
+
+          // Enable Reactivate button once Step 3 is visible (partial/zero payment allowed)
+          const saveBtn = document.getElementById("saveBtn");
+          saveBtn.disabled = false;
+          saveBtn.style.opacity = "1";
+        }
+
+        function openCurrentMonthPaymentDrawer(billingId, monthLabel, due) {
+          document.getElementById("currentMonthLabel").innerText = monthLabel;
+          document.getElementById("currentMonthTotalDue").innerText = `₹${due}`;
+          document.getElementById("currentMonthAmountPaid").value = due;
+          document.getElementById("currentMonthBillNumber").value = "";
+          document.getElementById("currentMonthDrawerError").innerHTML = "";
+          document.getElementById("currentMonthPaidBanner").style.display = "none";
+          document.getElementById("currentMonthPaymentDrawer").style.display = "block";
+
+          document.getElementById("currentMonthDrawerSaveBtn").onclick = async () => {
+            document.getElementById("currentMonthDrawerError").innerHTML = "";
+            const amountPaid = Number(document.getElementById("currentMonthAmountPaid").value);
+            const paymentMode = document.getElementById("currentMonthPaymentMode").value;
+            const billNumber = document.getElementById("currentMonthBillNumber").value.trim();
+
+            if (isNaN(amountPaid) || amountPaid <= 0) {
+              document.getElementById("currentMonthDrawerError").innerHTML = `<div class="error-banner" style="margin-bottom: 8px; font-size: 12px; padding: 4px 8px;">Enter a valid amount.</div>`;
+              return;
+            }
+            if (!/^\d{4,5}$/.test(billNumber)) {
+              document.getElementById("currentMonthDrawerError").innerHTML = `<div class="error-banner" style="margin-bottom: 8px; font-size: 12px; padding: 4px 8px;">Bill number must be 4 or 5 digits.</div>`;
+              return;
+            }
+
+            const doPayment = async () => {
+              try {
+                await api(`/payments/${billingId}/pay`, {
+                  method: "POST",
+                  body: JSON.stringify({ amount_paid: amountPaid, payment_mode: paymentMode, bill_number: billNumber })
+                });
+                document.getElementById("currentMonthPaymentDrawer").style.display = "none";
+                document.getElementById("currentMonthPaidBanner").style.display = "block";
+                paidBillingIds.add(Number(billingId));
+                await refreshCurrentMonthBill();
+              } catch (err) {
+                document.getElementById("currentMonthDrawerError").innerHTML = `<div class="error-banner" style="margin-bottom: 8px; font-size: 12px; padding: 4px 8px;">${err.message}</div>`;
+              }
+            };
+
+            if (amountPaid < due) {
+              showPartialPaymentWarning(due, amountPaid, doPayment, () => {});
+            } else {
+              doPayment();
+            }
+          };
+
+          document.getElementById("currentMonthDrawerCancelBtn").onclick = () => {
+            document.getElementById("currentMonthPaymentDrawer").style.display = "none";
+          };
+        }
+
+        // Called when seat blocks change — trigger Step 3 fee calculation
+        async function triggerStep3(blocks) {
+          if (blocks.length === 0) return;
+          document.getElementById("currentMonthBillSection").style.display = "block";
+          document.getElementById("currentMonthBillLoading").style.display = "block";
+          document.getElementById("currentMonthBillContent").style.display = "none";
+          document.getElementById("currentMonthPaidBanner").style.display = "none";
+          try {
+            const data = await api(`/students/${studentId}/prepare-current-month-bill`, {
+              method: "POST",
+              body: JSON.stringify({ blocks })
+            });
+            currentMonthBillingId = data.currentMonthRecord.billing_id;
+            // Apply admission fee checkbox if checked
+            if (document.getElementById("chargeAdmissionFeeCheckbox").checked && data.currentMonthRecord.admission_fee === 0) {
+              await api(`/payments/${currentMonthBillingId}/admission-fee`, {
+                method: "PUT",
+                body: JSON.stringify({ admission_fee: admissionFeeSetting })
+              });
+              // Re-fetch
+              const data2 = await api(`/students/${studentId}/prepare-current-month-bill`, {
+                method: "POST",
+                body: JSON.stringify({ blocks })
+              });
+              renderCurrentMonthBillRow(data2.currentMonthRecord);
+            } else {
+              renderCurrentMonthBillRow(data.currentMonthRecord);
+            }
+            document.getElementById("currentMonthBillLoading").style.display = "none";
+            document.getElementById("currentMonthBillContent").style.display = "block";
+          } catch (err) {
+            document.getElementById("currentMonthBillLoading").innerText = `Error: ${err.message}`;
+          }
+        }
+
+        // Fetch pre-reactivate data initially
+        await fetchPreReactivate();
+
+        // Debounce helper to avoid spamming prepare-current-month-bill on rapid input
+        let step3Timer = null;
+        function maybeRunStep3() {
+          clearTimeout(step3Timer);
+          step3Timer = setTimeout(async () => {
+            const blocks = collectReactivateBlocks();
+            if (blocks.length > 0 && blocks.every(b => b.start_time && b.end_time && b.seat_number)) {
+              await triggerStep3(blocks);
+            }
+          }, 300);
+        }
+
+        // Handle Reactivate action
+        document.getElementById("saveBtn").onclick = async () => {
+          document.getElementById("reactivateErrorSlot").innerHTML = "";
+          
+          // Verify previous month dues are cleared
+          const prevUnpaidCount = unpaidBills.filter(b => b.due_amount > 0).length;
+          if (prevUnpaidCount > 0) {
+            document.getElementById("reactivateErrorSlot").innerHTML = `<div class="error-banner">Cannot reactivate. Clear all previous month dues first.</div>`;
+            return;
+          }
+
+          const blocks = collectReactivateBlocks();
+          if (blocks.length === 0) {
+            document.getElementById("reactivateErrorSlot").innerHTML = `<div class="error-banner">At least one time block (start, end, seat) is required.</div>`;
+            return;
+          }
+
+          // Current month bill must exist (Step 3 must have run)
+          if (!currentMonthBillingId) {
+            document.getElementById("reactivateErrorSlot").innerHTML = `<div class="error-banner">Please wait for current month fee to be calculated (Step 3).</div>`;
+            return;
+          }
+
+          try {
+            await api(`/students/${studentId}/reactivate`, {
+              method: "POST",
+              body: JSON.stringify({ blocks }),
+            });
+            overlay.remove();
+            loadStudents();
+          } catch (err) {
+            document.getElementById("reactivateErrorSlot").innerHTML = `<div class="error-banner">${err.message}</div>`;
+          }
+        };
+      }
+
+      // Receipt Modal Control Functions
+      window.openReceiptModal = async function(billingId) {
+        try {
+          const overlay = document.getElementById('receiptModalOverlay');
+          overlay.style.display = 'flex';
+          
+          // Close button handler
+          document.getElementById('receiptCloseBtn').onclick = () => {
+            overlay.style.display = 'none';
+          };
+          overlay.onclick = (e) => {
+            if (e.target === overlay) overlay.style.display = 'none';
+          };
+
+          // Fetch billing record details
+          const paymentsList = await api('/payments');
+          const rec = paymentsList.find(r => r.billing_id === parseInt(billingId));
+          if (!rec) {
+            await customAlert("Receipt Error", "Receipt record not found.");
+            overlay.style.display = 'none';
+            return;
+          }
+
+          // Load institute name
+          const settings = await api('/app-settings').catch(() => ({ institute_name: 'Study Space' }));
+          const instName = settings.institute_name || 'StudySpace';
+          document.getElementById('receiptInstituteName').textContent = instName;
+          
+          // Load student details
+          document.getElementById('receiptStudentName').textContent = rec.student_name;
+          document.getElementById('receiptStudentPhone').textContent = rec.student_phone;
+          document.getElementById('receiptFatherName').textContent = rec.father_name || '—';
+          document.getElementById('receiptStudentId').textContent = `STC-${String(rec.student_id).padStart(4, '0')}`;
+          
+          // Load bill metadata
+          document.getElementById('receiptBillNo').textContent = rec.bill_number || '—';
+          document.getElementById('receiptBillingMonth').textContent = rec.billing_month;
+          document.getElementById('receiptPaymentDate').textContent = rec.payment_date || '—';
+          document.getElementById('receiptPaymentMode').textContent = rec.payment_mode || '—';
+          
+          // Breakdown values
+          const expected = rec.base_fee + rec.admission_fee + rec.fine_amount;
+          const paid = rec.amount_paid || 0;
+          const due = rec.due_amount;
+          
+          document.getElementById('receiptBaseFee').textContent = `₹${rec.base_fee.toLocaleString('en-IN')}`;
+          
+          const admRow = document.getElementById('receiptAdmissionRow');
+          if (rec.admission_fee > 0) {
+            document.getElementById('receiptAdmissionFee').textContent = `₹${rec.admission_fee.toLocaleString('en-IN')}`;
+            admRow.style.display = 'table-row';
+          } else {
+            admRow.style.display = 'none';
+          }
+
+          const fineRow = document.getElementById('receiptFineRow');
+          if (rec.fine_amount > 0) {
+            document.getElementById('receiptFineAmount').textContent = `₹${rec.fine_amount.toLocaleString('en-IN')}`;
+            fineRow.style.display = 'table-row';
+          } else {
+            fineRow.style.display = 'none';
+          }
+
+          document.getElementById('receiptTotalExpected').textContent = `₹${expected.toLocaleString('en-IN')}`;
+          document.getElementById('receiptTotalPaid').textContent = `₹${paid.toLocaleString('en-IN')}`;
+          document.getElementById('receiptRemainingDue').textContent = `₹${due.toLocaleString('en-IN')}`;
+
+          const noteRow = document.getElementById('receiptNoteRow');
+          if (rec.note) {
+            document.getElementById('receiptNote').textContent = `Note: ${rec.note}`;
+            noteRow.style.display = 'table-row';
+          } else {
+            noteRow.style.display = 'none';
+          }
+          
+          // Generate status summary concisely
+          const summaryEl = document.getElementById('receiptStatusSummary');
+          summaryEl.className = '';
+          
+          const txs = await api(`/payments/${billingId}/transactions`);
+          if (txs && txs.length > 0) {
+            const sortedTxs = [...txs].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+            
+            // 1. Combined Bill No (Receipt No)
+            const billNumbers = sortedTxs.map(t => t.bill_number);
+            const firstBill = billNumbers[0];
+            const allSameBillMonth = billNumbers.every(b => b.substring(0, 7) === firstBill.substring(0, 7));
+            let combinedBillNo = "";
+            if (allSameBillMonth) {
+              const monthPrefix = firstBill.substring(0, 8); // "YYYY-MM-"
+              const suffixes = sortedTxs.map(t => {
+                const parts = t.bill_number.split('-');
+                return parts[parts.length - 1];
+              });
+              combinedBillNo = monthPrefix + suffixes.join('/');
+            } else {
+              combinedBillNo = billNumbers.join(' / ');
+            }
+            document.getElementById('receiptBillNo').textContent = combinedBillNo;
+            
+            // 2. Combined Payment Date
+            const paymentDates = sortedTxs.map(t => t.payment_date);
+            const firstDate = paymentDates[0];
+            const allSameMonth = paymentDates.every(d => d.substring(0, 7) === firstDate.substring(0, 7));
+            let combinedPaymentDate = "";
+            if (allSameMonth) {
+              const datePrefix = firstDate.substring(0, 8); // "YYYY-MM-"
+              const dateSuffixes = sortedTxs.map(t => {
+                const parts = t.payment_date.split('-');
+                return parts[parts.length - 1];
+              });
+              combinedPaymentDate = datePrefix + dateSuffixes.join('/');
+            } else {
+              combinedPaymentDate = paymentDates.join(' / ');
+            }
+            document.getElementById('receiptPaymentDate').textContent = combinedPaymentDate;
+            
+            // 3. Combined Payment Mode
+            const modes = sortedTxs.map(t => t.payment_mode);
+            const uniqueModes = [...new Set(modes)];
+            document.getElementById('receiptPaymentMode').textContent = uniqueModes.join('/');
+
+            document.getElementById('receiptTransactionsBlock').style.display = 'block';
+            document.getElementById('receiptTransactionsList').innerHTML = sortedTxs.map(t => 
+              `<div style="display: flex; justify-content: space-between; gap: 10px;">
+                <span>&bull; ₹${t.amount_paid.toLocaleString('en-IN')} via ${t.payment_mode} (${t.payment_date})</span>
+                <span style="font-weight: 600;">Bill: ${t.bill_number}</span>
+              </div>`
+            ).join('');
+          } else {
+            document.getElementById('receiptTransactionsBlock').style.display = 'none';
+          }
+
+          if (rec.status === 'Paid') {
+            summaryEl.style.background = 'var(--green-light)';
+            summaryEl.style.color = 'var(--green)';
+            summaryEl.style.border = '1px solid #7cc493';
+            
+            if (txs && txs.length > 1) {
+              summaryEl.innerHTML = `<strong>Status: Fulfilled</strong><br>Paid in full via ${txs.length} transactions. Last payment date: ${rec.payment_date}.`;
+            } else {
+              summaryEl.innerHTML = `<strong>Status: Fully Paid</strong><br>Settled in a single full payment. Transacted on: ${rec.payment_date}.`;
+            }
+          } else if (rec.status === 'Partial') {
+            summaryEl.style.background = 'var(--orange-light)';
+            summaryEl.style.color = 'var(--orange)';
+            summaryEl.style.border = '1px solid #e2c97e';
+            
+            summaryEl.innerHTML = `<strong>Status: Partially Paid</strong><br>Collected ₹${paid.toLocaleString('en-IN')} of expected ₹${expected.toLocaleString('en-IN')}. Remaining dues of ₹${due.toLocaleString('en-IN')} written to student dues.`;
+          } else {
+            summaryEl.style.background = 'var(--red-light)';
+            summaryEl.style.color = 'var(--red)';
+            summaryEl.style.border = '1px solid #f0aea9';
+            
+            summaryEl.innerHTML = `<strong>Status: Overdue / Unpaid</strong><br>No payment transactions recorded for this month. Expected: ₹${expected.toLocaleString('en-IN')}.`;
+          }
+        } catch (err) {
+          console.error(err);
+          await customAlert("Receipt Error", 'Failed to load receipt: ' + err.message);
+          document.getElementById('receiptModalOverlay').style.display = 'none';
+        }
+      };
+
+      // openReceiptForReactivation: Opens a receipt popup for a billing record paid during reactivation.
+      // Uses the popup approach so receipt logic stays in payments.html.
+      function openReceiptForReactivation(billingId) {
+        const popup = window.open(
+          `payments.html?receipt=${billingId}`,
+          `receipt_${billingId}`,
+          'width=500,height=700,scrollbars=yes,resizable=yes'
+        );
+        if (!popup) {
+          customAlert("Popup Blocked", 'Please allow popups to view receipts, or visit the Payments page.');
+        }
+      }
+    </script>
+  </body>
+</html>

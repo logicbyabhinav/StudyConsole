@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="description"
+      content="Configure institute rules and system behavior."
+    />
+    <title>Settings — StudySpace</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+      /* ── Settings page ─────────────────────────────────── */
+      .settings-body {
+        display: flex;
+        flex-direction: column;
+        max-width: 740px;
+      }
+
+      /* Section block */
+      .settings-section {
+        padding: 28px 0;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .settings-section:last-child {
+        border-bottom: none;
+      }
+
+      /* Section heading */
+      .section-heading {
+        margin: 0 0 4px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+      .section-subheading {
+        margin: 0 0 20px;
+        font-size: 12px;
+        color: var(--text-faint);
+        line-height: 1.5;
+      }
+
+      /* Individual setting row */
+      .setting-row {
+        display: grid;
+        grid-template-columns: 1fr 280px;
+        align-items: start;
+        gap: 24px;
+        padding: 12px 0;
+        border-top: 1px solid var(--border-soft);
+      }
+      .setting-row:first-of-type {
+        border-top: none;
+      }
+
+      .setting-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        margin: 0 0 2px;
+      }
+      .setting-hint {
+        font-size: 12px;
+        color: var(--text-faint);
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      /* Save footer within a section */
+      .section-footer {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-top: 16px;
+        margin-top: 4px;
+        border-top: 1px solid var(--border-soft);
+      }
+
+      /* Fee section header */
+      .fee-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      /* ── Fee Modal ─────────────────────────────────────── */
+      .fee-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 12, 16, 0.4);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .fee-modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .fee-modal {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: var(--shadow-lg);
+        transform: translateY(15px) scale(0.96);
+        transition:
+          transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+          background-color 0.2s,
+          border-color 0.2s;
+        overflow: hidden;
+      }
+      .fee-modal-overlay.open .fee-modal {
+        transform: translateY(0) scale(1);
+      }
+      .fee-modal-header {
+        padding: 16px 20px 14px;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .fee-modal-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0 0 2px;
+        letter-spacing: -0.01em;
+      }
+      .fee-modal-subtitle {
+        font-size: 12px;
+        color: var(--text-faint);
+        margin: 0;
+      }
+      .fee-modal-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .fee-modal-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .fee-modal-field label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-muted);
+      }
+      .fee-modal-field .field-hint {
+        font-size: 11px;
+        color: var(--text-faint);
+        margin: 0;
+        line-height: 1.4;
+      }
+      .fee-modal-field input {
+        width: 100%;
+      }
+      .fee-modal-error {
+        font-size: 12px;
+        color: var(--red);
+        background: var(--red-light);
+        border: 1px solid #f0aea9;
+        border-radius: 5px;
+        padding: 8px 12px;
+        display: none;
+      }
+      .fee-modal-error.visible {
+        display: block;
+      }
+      .fee-modal-footer {
+        padding: 14px 20px 16px;
+        border-top: 1px solid var(--border-soft);
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      /* Fee table */
+      .fee-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .fee-table th {
+        text-align: left;
+        padding: 8px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-faint);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+      }
+      .fee-table td {
+        text-align: left;
+        padding: 10px 12px;
+        font-size: 13px;
+        color: var(--text);
+        border-bottom: 1px solid var(--border-soft);
+        vertical-align: middle;
+      }
+      .fee-table tr:last-child td {
+        border-bottom: none;
+      }
+      .fee-table tr:hover td {
+        background: var(--bg);
+      }
+
+      /* Fee action buttons */
+      .fee-actions {
+        display: flex;
+        gap: 6px;
+      }
+      .fee-btn {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        color: var(--text-muted);
+        transition: all 0.15s ease;
+        font-family: var(--font-mono);
+      }
+      .fee-btn:hover {
+        background: var(--bg);
+        border-color: var(--text-muted);
+        color: var(--text);
+      }
+      .fee-btn.edit-fee {
+        color: var(--blue);
+        border-color: #b6d4fb;
+      }
+      .fee-btn.edit-fee:hover {
+        background: var(--blue-light);
+      }
+      .fee-btn.disable-fee {
+        color: var(--orange);
+        border-color: #e2c97e;
+      }
+      .fee-btn.disable-fee:hover {
+        background: var(--orange-light);
+      }
+      .fee-btn.enable-fee {
+        color: var(--green);
+        border-color: #7cc493;
+      }
+      .fee-btn.enable-fee:hover {
+        background: var(--green-light);
+      }
+      .fee-btn.delete-fee {
+        color: var(--red);
+        border-color: #f0aea9;
+      }
+      .fee-btn.delete-fee:hover {
+        background: var(--red-light);
+      }
+
+      /* Status badge */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 20px;
+        border: 1px solid transparent;
+      }
+      .status-badge::before {
+        content: "";
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+      .status-badge.active {
+        background: var(--green-light);
+        color: var(--green);
+        border-color: #a8ddb5;
+      }
+      .status-badge.active::before {
+        background: var(--green);
+      }
+      .status-badge.disabled {
+        background: var(--border-soft);
+        color: var(--text-faint);
+        border-color: var(--border);
+      }
+      .status-badge.disabled::before {
+        background: var(--text-faint);
+      }
+
+      /* Callout notice */
+      .callout {
+        margin-top: 12px;
+        padding: 10px 14px;
+        background: var(--orange-light);
+        border: 1px solid #e2c97e;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #5a4000;
+        line-height: 1.5;
+      }
+      .callout.info {
+        background: var(--blue-light);
+        border-color: #b6d4fb;
+        color: #0550ae;
+      }
+
+      /* Danger zone */
+      .danger-section {
+        margin-top: 24px;
+        border: 1px solid #f0aea9;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .danger-section-header {
+        padding: 12px 16px;
+        background: var(--red-light);
+        border-bottom: 1px solid #f0aea9;
+      }
+      .danger-section-header .section-heading {
+        color: var(--red);
+        font-size: 13px;
+        margin: 0 0 2px;
+      }
+      .danger-section-header .section-subheading {
+        margin: 0;
+        color: #9e3535;
+        font-size: 11.5px;
+      }
+      .danger-section-body {
+        padding: 16px;
+        background: var(--card-bg);
+      }
+      .danger-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 24px;
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: var(--dark);
+        color: #fff;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+        z-index: 999;
+        transform: translateY(60px);
+        opacity: 0;
+        transition:
+          transform 0.25s ease,
+          opacity 0.25s ease;
+      }
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      .toast-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .toast.success .toast-dot {
+        background: #3fb950;
+      }
+      .toast.error .toast-dot {
+        background: #f85149;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="shell"></div>
+    <div class="toast" id="toast">
+      <span class="toast-dot" id="toastDot"></span>
+      <span id="toastMsg"></span>
+    </div>
+
+    <!-- Fee Slab Modal -->
+    <div
+      class="fee-modal-overlay"
+      id="feeModalOverlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="feeModalTitle"
+    >
+      <div class="fee-modal">
+        <div class="fee-modal-header">
+          <h2 class="fee-modal-title" id="feeModalTitle">Add fee slab</h2>
+          <p class="fee-modal-subtitle" id="feeModalSubtitle">
+            Define a new pricing tier by study hours per day.
+          </p>
+        </div>
+        <div class="fee-modal-body">
+          <div class="fee-modal-field">
+            <label for="feeModalHours">Study hours per day</label>
+            <input
+              type="number"
+              id="feeModalHours"
+              min="1"
+              max="24"
+              placeholder="e.g., 8"
+              autocomplete="off"
+            />
+            <p class="field-hint">
+              How many hours per day students in this tier study (1&ndash;24).
+            </p>
+          </div>
+          <div class="fee-modal-field">
+            <label for="feeModalFee">Monthly fee (&#8377;)</label>
+            <input
+              type="number"
+              id="feeModalFee"
+              min="0"
+              placeholder="e.g., 1000"
+              autocomplete="off"
+            />
+            <p class="field-hint">
+              Amount charged per month for students in this tier.
+            </p>
+          </div>
+          <div class="fee-modal-error" id="feeModalError"></div>
+        </div>
+        <div class="fee-modal-footer">
+          <button class="btn btn-secondary" id="feeModalCancel">Cancel</button>
+          <button class="btn btn-primary" id="feeModalSubmit">Add slab</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script>
+      renderShell(
+        "settings",
+        "Settings",
+        "Manage institute configuration and system rules",
+      );
+
+      const content = document.getElementById("page-content");
+
+      content.innerHTML = `
+        <div class="settings-body">
+
+          <!-- ── Institute Information ─────────────────────── -->
+          <div class="settings-section" id="section-institute">
+            <h2 class="section-heading">Institute Information</h2>
+            <p class="section-subheading">Basic details about your study centre, displayed throughout the application.</p>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Institute Name</div>
+                <p class="setting-hint">Shown in the top header bar on every page of the app.</p>
+              </div>
+              <div>
+                <input type="text" id="institute_name" placeholder="e.g., Bright Minds Study Centre" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Phone Number</div>
+                <p class="setting-hint">Contact number for administrative reference.</p>
+              </div>
+              <div>
+                <input type="text" id="institute_phone" placeholder="e.g., +91 98765 43210" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Address</div>
+                <p class="setting-hint">Physical location of the institute.</p>
+              </div>
+              <div>
+                <input type="text" id="institute_address" placeholder="e.g., 123 Main St, City" />
+              </div>
+            </div>
+
+            <div class="section-footer">
+              <button class="btn btn-primary" id="saveInstituteBtn">Save changes</button>
+            </div>
+          </div>
+
+          <!-- ── Seat Configuration ──────────────────────── -->
+          <div class="settings-section" id="section-seats">
+            <h2 class="section-heading">Seat Configuration</h2>
+            <p class="section-subheading">Define total capacity and how seats are grouped into labelled sections.</p>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Total Seats</div>
+                <p class="setting-hint">Maximum number of seats available across all sections.</p>
+              </div>
+              <div>
+                <input type="number" id="total_seats" min="1" placeholder="50" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Seats per Section</div>
+                <p class="setting-hint">Number of seats that form one labelled section (A, B, C, …).</p>
+              </div>
+              <div>
+                <input type="number" id="section_size" min="1" placeholder="10" />
+              </div>
+            </div>
+
+            <div class="callout">
+              Changing seat configuration requires a database reinitialization. Existing allocations may be affected.
+            </div>
+
+            <div class="section-footer">
+              <button class="btn btn-primary" id="saveSeatsBtn">Update configuration</button>
+            </div>
+          </div>
+
+          <!-- ── Fee Structure ───────────────────────────── -->
+          <div class="settings-section" id="section-fees">
+            <h2 class="section-heading">Fee Structure</h2>
+            <p class="section-subheading">Define monthly pricing for different study-hour tiers. Multiple slabs can be active simultaneously.</p>
+
+            <div class="fee-section-header">
+              <span style="font-size:12px;color:var(--text-faint);" id="feeSlabCount"></span>
+              <button class="btn btn-primary" id="openAddFeeBtn">Add fee slab</button>
+            </div>
+
+            <table class="fee-table">
+              <thead>
+                <tr>
+                  <th>Hours / day</th>
+                  <th>Monthly fee</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="feeTableBody">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:1.75rem 0;">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ── Audit & Payment Enforcement ────────────── -->
+          <div class="settings-section" id="section-audit">
+            <h2 class="section-heading">Audit &amp; Payment Enforcement</h2>
+            <p class="section-subheading">Automate overdue detection, fine application, and student suspension.</p>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Operational Start Month</div>
+                <p class="setting-hint">The month when the billing system officially goes live. Before this month, the system operates in <strong>transition mode</strong> — allowing you to digitize existing students without charging them. Leave blank if the system is already live.</p>
+              </div>
+              <div>
+                <input type="month" id="operational_start_month" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Audit date</div>
+                <p class="setting-hint">Day of the month (1–31) when the system checks for unpaid fees.</p>
+              </div>
+              <div>
+                <input type="number" id="audit_date" min="1" max="31" placeholder="e.g., 5" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Fine amount (₹)</div>
+                <p class="setting-hint">Late-payment penalty charged on the audit date.</p>
+              </div>
+              <div>
+                <input type="number" id="fine_amount" min="0" placeholder="e.g., 100" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Suspension threshold</div>
+                <p class="setting-hint">Months overdue after which a student is automatically suspended.</p>
+              </div>
+              <div>
+                <input type="number" id="suspension_threshold" min="0" placeholder="e.g., 1" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Admission fees (₹)</div>
+                <p class="setting-hint">One-time fee charged at student admission.</p>
+              </div>
+              <div>
+                <input type="number" id="admission_fee" min="0" placeholder="e.g., 150" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Fine on partial payments (₹)</div>
+                <p class="setting-hint">Late penalty charged on partial payments on the audit date.</p>
+              </div>
+              <div>
+                <input type="number" id="partial_fine_amount" min="0" placeholder="e.g., 50" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Months of exemption from partial payment fine</div>
+                <p class="setting-hint">Number of months a student is exempt from partial fines after joining.</p>
+              </div>
+              <div>
+                <input type="number" id="partial_exemption_months" min="0" placeholder="e.g., 0" />
+              </div>
+            </div>
+
+
+
+            <div class="callout info">
+              <strong>How it works:</strong> On the audit date, unpaid fees are marked overdue and a fine is charged.
+              If the overdue count exceeds the suspension threshold, the student is automatically suspended.
+            </div>
+
+            <div class="section-footer">
+              <button class="btn btn-primary" id="saveAuditBtn">Save changes</button>
+            </div>
+          </div>
+
+          <!-- ── Desk Login QR Code ──────────────────────── -->
+          <div class="settings-section" id="section-qrcode">
+            <h2 class="section-heading">Desk Login QR Code</h2>
+            <p class="section-subheading">Print this QR code and stick it on every desk. Students connect to the study centre Wi-Fi, scan the code, and log in with their Student ID and password.</p>
+
+            <div class="setting-row" style="grid-template-columns: 1fr auto; align-items: center;">
+              <div>
+                <div class="setting-label">Login URL (LAN)</div>
+                <p class="setting-hint">Students must be on the study centre Wi-Fi for this address to work. Scanning from any other network will not reach the server.</p>
+                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <code id="regUrlText" style="font-family: var(--font-mono); font-size: 11.5px; background: var(--bg); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); word-break: break-all;">Loading URL...</code>
+                  <button class="btn btn-secondary" id="copyRegLinkBtn" style="padding: 4px 10px; font-size: 11px;">Copy Link</button>
+                </div>
+                <p class="setting-hint" style="margin-top: 10px; font-style: italic; color: var(--text-faint);">
+                  This URL changes if the server machine joins a different Wi-Fi network. Re-open this page to get the updated QR before reprinting.
+                </p>
+                <!-- Print / Save buttons — only shown during transition period (operational_start_month in the future) -->
+                <div id="qrActionBtns" style="display:none; margin-top: 16px; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-primary" id="printQrBtn" style="font-size: 12px;">🖨️ Print QR Code</button>
+                  <button class="btn btn-secondary" id="saveQrBtn" style="font-size: 12px;">⬇ Save as Image</button>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                <div id="qrCodeContainer" style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: #ffffff; line-height: 0; overflow: visible;">
+                  <span style="font-size: 11px; color: var(--text-faint); text-align: center; display:block; line-height: 150px;">Loading QR...</span>
+                </div>
+                <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); font-weight: 600;">SCAN TO LOG IN</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Email Notification Settings ────────────── -->
+          <div class="settings-section" id="section-smtp">
+            <h2 class="section-heading">Email Notification Settings</h2>
+            <p class="section-subheading">Configure SMTP server configurations to send transactional admission emails, billing invoices, and payment receipts to students.</p>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Enable Email Notifications</div>
+                <p class="setting-hint">Toggle automatically sending emails on student welcome, invoice generation, and payments.</p>
+              </div>
+              <div style="display: flex; align-items: center;">
+                <input type="checkbox" id="email_active" style="width: 20px; height: 20px; cursor: pointer;" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">SMTP Host</div>
+                <p class="setting-hint">Server address of your email service. Default is smtp.gmail.com.</p>
+              </div>
+              <div>
+                <input type="text" id="smtp_host" placeholder="smtp.gmail.com" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">SMTP Port</div>
+                <p class="setting-hint">Typically 465 for SSL/TLS, or 587 for STARTTLS.</p>
+              </div>
+              <div>
+                <input type="number" id="smtp_port" placeholder="465" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">SMTP Security</div>
+                <p class="setting-hint">Check if using port 465 (SSL/TLS). Uncheck for other ports.</p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="smtp_secure" style="width: 20px; height: 20px; cursor: pointer;" />
+                <span style="font-size: 12px; color: var(--text-muted);">Use SSL/TLS</span>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Sender Email Address</div>
+                <p class="setting-hint">The email address from which notifications are sent.</p>
+              </div>
+              <div>
+                <input type="email" id="sender_email" placeholder="your_gmail@gmail.com" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Sender password / Gmail App Password</div>
+                <p class="setting-hint">For Gmail accounts, do not enter your personal password. Enable 2FA on Gmail, generate an "App Password", and enter it here.</p>
+              </div>
+              <div>
+                <input type="password" id="sender_password" placeholder="16-character Google App password" />
+              </div>
+            </div>
+
+            <div class="section-footer" style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" id="saveSmtpBtn">Save changes</button>
+              <button class="btn btn-secondary" id="testEmailBtn">Send test email</button>
+            </div>
+
+          </div>
+
+
+          <!-- ── Admin Password Settings ────────────────── -->
+          <div class="settings-section" id="section-password">
+            <h2 class="section-heading">Administrator Password Settings</h2>
+            <p class="section-subheading">Update the password used to access the administrator console dashboard.</p>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Current Admin Password</div>
+                <p class="setting-hint">Verify your identity by entering your current admin password.</p>
+              </div>
+              <div>
+                <input type="password" id="admin_old_password" placeholder="Current password" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">New Admin Password</div>
+                <p class="setting-hint">Must be at least 8 characters long.</p>
+              </div>
+              <div>
+                <input type="password" id="admin_new_password" placeholder="New password (min 8 chars)" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Confirm New Password</div>
+                <p class="setting-hint">Repeat the new password exactly.</p>
+              </div>
+              <div>
+                <input type="password" id="admin_confirm_password" placeholder="Confirm new password" />
+              </div>
+            </div>
+
+            <div class="section-footer">
+              <button class="btn btn-primary" id="saveAdminPasswordBtn">Change Admin Password</button>
+            </div>
+          </div>
+
+          <!-- ── Backup & Restore ────────────────────────── -->
+          <div class="settings-section" id="section-backup">
+            <h2 class="section-heading">Backup &amp; Restore</h2>
+            <p class="section-subheading">Download a copy of your database or restore from a previous backup file.</p>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Download backup</div>
+                <p class="setting-hint">Exports all data including student photos as a single <code style="font-family:var(--font-mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:4px;border:1px solid var(--border);">.zip</code> file.</p>
+              </div>
+              <div>
+                <button class="btn btn-secondary" id="backupDbBtn" style="width:100%;">Download backup</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Restore from file</div>
+                <p class="setting-hint">Upload a previously downloaded <code style="font-family:var(--font-mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:4px;border:1px solid var(--border);">.zip</code> backup file to restore all data including photos.</p>
+              </div>
+              <div>
+                <button class="btn btn-secondary" id="restoreDbBtn" style="width:100%;">Restore from file</button>
+                <input type="file" id="restoreFile" accept=".zip" style="display:none;" />
+              </div>
+            </div>
+
+            <!-- Danger zone -->
+            <div class="danger-section">
+              <div class="danger-section-header">
+                <h3 class="section-heading">Danger zone</h3>
+                <p class="section-subheading">Irreversible actions — proceed with extreme caution.</p>
+              </div>
+              <div class="danger-section-body">
+                <div class="danger-row">
+                  <div>
+                    <div class="setting-label">Reset all data</div>
+                    <p class="setting-hint" style="color:#9e3535;">Permanently deletes all students, payments, and allocations. This action cannot be undone.</p>
+                  </div>
+                  <button class="btn btn-danger" id="resetDbBtn">Reset all data</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      // ── Toast ────────────────────────────────────────────────────
+      let _toastTimer;
+      function showToast(msg, type = "success") {
+        const el = document.getElementById("toast");
+        el.className = `toast ${type}`;
+        document.getElementById("toastMsg").textContent = msg;
+        el.classList.add("show");
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+      }
+
+      // ── Load settings ────────────────────────────────────────────
+      async function loadSettings() {
+        try {
+          const s = await api("/app-settings");
+          document.getElementById("institute_name").value =
+            s.institute_name || "";
+          document.getElementById("institute_phone").value =
+            s.institute_phone || "";
+          document.getElementById("institute_address").value =
+            s.institute_address || "";
+          document.getElementById("total_seats").value = s.total_seats || 50;
+          document.getElementById("section_size").value = s.section_size || 10;
+          document.getElementById("audit_date").value = s.audit_date || 5;
+          document.getElementById("fine_amount").value = s.fine_amount || 100;
+          document.getElementById("admission_fee").value = s.admission_fee || 0;
+          document.getElementById("partial_fine_amount").value =
+            s.partial_fine_amount || 0;
+          document.getElementById("partial_exemption_months").value =
+            s.partial_exemption_months || 0;
+          document.getElementById("suspension_threshold").value =
+            s.suspension_threshold || 1;
+
+
+          // Operational start month
+          document.getElementById("operational_start_month").value =
+            s.operational_start_month || "";
+
+          // SMTP values binding
+          document.getElementById("email_active").checked =
+            s.email_active === 1;
+          document.getElementById("smtp_host").value =
+            s.smtp_host || "smtp.gmail.com";
+          document.getElementById("smtp_port").value = s.smtp_port || 465;
+          document.getElementById("smtp_secure").checked = s.smtp_secure === 1;
+          document.getElementById("sender_email").value = s.sender_email || "";
+          document.getElementById("sender_password").value =
+            s.has_sender_password ? "********" : "";
+
+          // ── Desk Login QR Code ────────────────────────────────────
+          // Use registration_url from server (already points to /login.html
+          // with the correct LAN IP and port — built server-side so it's always
+          // accurate regardless of what the frontend guesses).
+          const loginUrl = s.registration_url ||
+            `http://${s.local_ip || "localhost"}:3000/login.html`;
+
+          document.getElementById("regUrlText").textContent = loginUrl;
+
+          // Render QR — QRCode.js appends both a <canvas> and an <img> into the
+          // target element. We want only the canvas (needed for save/print).
+          // Clear the container, render, then hide the img it added.
+          const qrContainer = document.getElementById("qrCodeContainer");
+          qrContainer.innerHTML = "";
+          if (typeof QRCode !== "undefined") {
+            new QRCode(qrContainer, {
+              text: loginUrl,
+              width: 150,
+              height: 150,
+              colorDark: "#000000",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.M
+            });
+            // QRCode.js adds an <img> for fallback — hide it so the canvas shows
+            const img = qrContainer.querySelector("img");
+            if (img) img.style.display = "none";
+          } else {
+            qrContainer.innerHTML = `<div style="width:150px;height:150px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;">QR unavailable</div>`;
+          }
+
+          // ── Transition-period buttons ─────────────────────────────
+          // Show Print / Save only when operational_start_month is still in
+          // the future — i.e. the centre is in setup/transition mode and needs
+          // to stick QR codes on desks before going live.
+          const opMonth = s.operational_start_month; // 'YYYY-MM' or null
+          const actionBtns = document.getElementById("qrActionBtns");
+          if (opMonth) {
+            const today = new Date();
+            const currentYM = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+            if (opMonth > currentYM) {
+              // Still in transition — show the buttons
+              actionBtns.style.display = "flex";
+
+              document.getElementById("printQrBtn").addEventListener("click", () => {
+                const canvas = qrContainer.querySelector("canvas");
+                if (!canvas) return;
+                const win = window.open("", "_blank");
+                win.document.write(`<!DOCTYPE html><html><head><title>Desk Login QR</title>
+                  <style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;gap:12px;}
+                  p{font-size:12px;color:#555;margin:0;}strong{font-size:15px;}</style></head>
+                  <body>
+                    <strong>Scan to Log In</strong>
+                    <img src="${canvas.toDataURL()}" width="200" height="200">
+                    <p>${loginUrl}</p>
+                    <p style="font-size:10px;color:#aaa;">Connect to study centre Wi-Fi first</p>
+                    <script>window.onload=()=>{window.print();window.close();}<\/script>
+                  </body></html>`);
+                win.document.close();
+              });
+
+              document.getElementById("saveQrBtn").addEventListener("click", () => {
+                const canvas = qrContainer.querySelector("canvas");
+                if (!canvas) return;
+                const a = document.createElement("a");
+                a.href = canvas.toDataURL("image/png");
+                a.download = "desk-login-qr.png";
+                a.click();
+              });
+            }
+          }
+
+          loadFeeStructures();
+        } catch (err) {
+          showToast("Failed to load settings", "error");
+        }
+      }
+
+      // ── Fee structures ───────────────────────────────────────────
+      async function loadFeeStructures() {
+        try {
+          const fees = await api("/fees");
+          const tbody = document.getElementById("feeTableBody");
+          if (!fees.length) {
+            tbody.innerHTML =
+              '<tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:1.75rem 0;">No fee slabs defined yet.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = fees
+            .map((f) => {
+              const pendingBadge =
+                f.pending_monthly_fee != null
+                  ? `<div style="margin-top:4px;font-size:11px;color:#0550ae;background:var(--blue-light);border:1px solid #b6d4fb;border-radius:4px;padding:2px 7px;display:inline-flex;align-items:center;gap:6px;">
+                  <span>&#8593; &#8377;${Number(f.pending_monthly_fee).toLocaleString("en-IN")}/mo &nbsp;&middot;&nbsp; effective 1st ${formatMonthLabel(f.pending_from)}</span>
+                  <button onclick="cancelPending(${f.fee_structure_id})" title="Cancel scheduled change" style="background:none;border:none;cursor:pointer;color:#0550ae;font-size:13px;line-height:1;padding:0 2px;font-weight:700;">&times;</button>
+                </div>`
+                  : "";
+              return `
+            <tr>
+              <td><span style="font-family:var(--font-mono);font-size:12px;">${f.hours_per_day}h</span></td>
+              <td style="font-weight:500;">
+                &#8377;${f.monthly_fee.toLocaleString("en-IN")}<span style="color:var(--text-faint);font-weight:400;"> / month</span>
+                ${pendingBadge}
+              </td>
+              <td><span class="status-badge ${f.active ? "active" : "disabled"}">${f.active ? "Active" : "Disabled"}</span></td>
+              <td>
+                <div class="fee-actions">
+                  <button class="fee-btn edit-fee" onclick="editFee(${f.fee_structure_id},${f.hours_per_day},${f.monthly_fee})">Edit</button>
+                  <button class="fee-btn ${f.active ? "disable-fee" : "enable-fee"}" onclick="toggleFeeSlab(${f.fee_structure_id},${!f.active})">${f.active ? "Disable" : "Enable"}</button>
+                  ${!f.active ? `<button class="fee-btn delete-fee" onclick="deleteFee(${f.fee_structure_id})">Delete</button>` : ""}
+                </div>
+              </td>
+            </tr>`;
+            })
+            .join("");
+          const countEl = document.getElementById("feeSlabCount");
+          if (countEl)
+            countEl.textContent = `${fees.length} slab${fees.length === 1 ? "" : "s"} defined`;
+        } catch (err) {
+          showToast("Failed to load fee structure", "error");
+        }
+      }
+
+      // ── Save institute ────────────────────────────────────────────
+      document.getElementById("saveInstituteBtn")?.addEventListener("click", async () => {
+          const name = document.getElementById("institute_name").value.trim();
+          const phone = document.getElementById("institute_phone").value.trim();
+          const address = document
+            .getElementById("institute_address")
+            .value.trim();
+          if (!name) {
+            showToast("Institute name is required", "error");
+            return;
+          }
+          try {
+            await api("/app-settings", {
+              method: "PUT",
+              body: JSON.stringify({
+                institute_name: name,
+                institute_phone: phone,
+                institute_address: address,
+              }),
+            });
+            sessionStorage.setItem("institute_name", name);
+            _setInstituteName(name);
+            showToast("Institute info saved");
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        });
+
+      // ── Save seats ────────────────────────────────────────────────
+      document.getElementById("saveSeatsBtn")?.addEventListener("click", async () => {
+          const total =
+            parseInt(document.getElementById("total_seats").value) || 50;
+          const section =
+            parseInt(document.getElementById("section_size").value) || 10;
+          if (
+            !(await customConfirm(
+              "Confirm Reinitialization",
+              "Changing seat configuration will reinitialize the database. Continue?",
+            ))
+          )
+            return;
+          try {
+            await api("/app-settings", {
+              method: "PUT",
+              body: JSON.stringify({
+                total_seats: total,
+                section_size: section,
+              }),
+            });
+            showToast("Configuration updated — reloading…");
+            setTimeout(() => location.reload(), 1500);
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        });
+
+      // ── Fee modal state ───────────────────────────────────────────
+      let _feeModalMode = "add"; // 'add' | 'edit'
+      let _feeEditId = null;
+
+      function openFeeModal(mode, feeId, hours, fee) {
+        _feeModalMode = mode;
+        _feeEditId = feeId || null;
+
+        const overlay = document.getElementById("feeModalOverlay");
+        const title = document.getElementById("feeModalTitle");
+        const subtitle = document.getElementById("feeModalSubtitle");
+        const submitBtn = document.getElementById("feeModalSubmit");
+        const hoursInput = document.getElementById("feeModalHours");
+        const feeInput = document.getElementById("feeModalFee");
+        const errEl = document.getElementById("feeModalError");
+
+        if (mode === "edit") {
+          title.textContent = "Edit fee slab";
+          subtitle.textContent =
+            "Update the hours or monthly fee for this slab.";
+          submitBtn.textContent = "Save changes";
+          hoursInput.value = hours;
+          feeInput.value = fee;
+        } else {
+          title.textContent = "Add fee slab";
+          subtitle.textContent =
+            "Define a new pricing tier by study hours per day.";
+          submitBtn.textContent = "Add slab";
+          hoursInput.value = "";
+          feeInput.value = "";
+        }
+
+        errEl.classList.remove("visible");
+        errEl.textContent = "";
+        overlay.classList.add("open");
+        setTimeout(() => hoursInput.focus(), 120);
+      }
+
+      function closeFeeModal() {
+        document.getElementById("feeModalOverlay").classList.remove("open");
+      }
+
+      // Open modal via Add button
+      document.getElementById("openAddFeeBtn")?.addEventListener("click", () => {
+        openFeeModal("add");
+      });
+
+      // Dismiss on backdrop click
+      document.getElementById("feeModalOverlay")?.addEventListener("click", (e) => {
+          if (e.target === e.currentTarget) closeFeeModal();
+        });
+
+      // Dismiss on Escape
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeFeeModal();
+      });
+
+      // Cancel button
+      document.getElementById("feeModalCancel")?.addEventListener("click", closeFeeModal);
+
+      // Submit
+      document.getElementById("feeModalSubmit")?.addEventListener("click", async () => {
+          const hours = parseInt(
+            document.getElementById("feeModalHours").value,
+          );
+          const fee = parseInt(document.getElementById("feeModalFee").value);
+          const errEl = document.getElementById("feeModalError");
+
+          if (!hours || hours < 1 || hours > 24) {
+            errEl.textContent = "Hours per day must be between 1 and 24.";
+            errEl.classList.add("visible");
+            document.getElementById("feeModalHours").focus();
+            return;
+          }
+          if (!fee || fee < 0) {
+            errEl.textContent = "Monthly fee must be a positive number.";
+            errEl.classList.add("visible");
+            document.getElementById("feeModalFee").focus();
+            return;
+          }
+          errEl.classList.remove("visible");
+
+          const submitBtn = document.getElementById("feeModalSubmit");
+          submitBtn.disabled = true;
+          submitBtn.textContent =
+            _feeModalMode === "add" ? "Adding…" : "Saving…";
+
+          try {
+            if (_feeModalMode === "add") {
+              await api("/fees", {
+                method: "POST",
+                body: JSON.stringify({
+                  hours_per_day: hours,
+                  monthly_fee: fee,
+                }),
+              });
+              showToast("Fee slab added — takes effect immediately");
+              closeFeeModal();
+              loadFeeStructures();
+            } else {
+              const res = await api(`/fees/${_feeEditId}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                  hours_per_day: hours,
+                  monthly_fee: fee,
+                }),
+              });
+              if (res.pending) {
+                // Show inline notice instead of just a toast so admin can't miss it.
+                errEl.style.cssText =
+                  "display:block;background:var(--blue-light);border-color:#b6d4fb;color:#0550ae;";
+                errEl.textContent = `\u2139\ufe0f New price \u20b9${Number(res.pendingFee).toLocaleString("en-IN")}/mo will take effect from 1st ${formatMonthLabel(res.pendingFrom)}. Current month billing is unchanged.`;
+                loadFeeStructures();
+              } else {
+                showToast("Fee slab updated");
+                closeFeeModal();
+                loadFeeStructures();
+              }
+            }
+          } catch (err) {
+            errEl.style.cssText = "";
+            errEl.textContent = err.message;
+            errEl.classList.add("visible");
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent =
+              _feeModalMode === "add" ? "Add slab" : "Save changes";
+          }
+        });
+
+      // Enter key submits
+      document.getElementById("feeModalOverlay")?.addEventListener("keydown", (e) => {
+          if (e.key === "Enter")
+            document.getElementById("feeModalSubmit").click();
+        });
+
+      // Helper: '2026-07' → 'July 2026'
+      function formatMonthLabel(yyyymm) {
+        if (!yyyymm) return "";
+        const [y, m] = yyyymm.split("-");
+        return new Date(+y, +m - 1, 1).toLocaleString("en-IN", {
+          month: "long",
+          year: "numeric",
+        });
+      }
+
+      function editFee(feeId, hours, fee) {
+        // Reset any blue info style from a previous pending notice before reopening.
+        const errEl = document.getElementById("feeModalError");
+        errEl.style.cssText = "";
+        errEl.classList.remove("visible");
+        openFeeModal("edit", feeId, hours, fee);
+      }
+
+      async function toggleFeeSlab(feeId, active) {
+        try {
+          await api(`/fees/${feeId}`, {
+            method: "PUT",
+            body: JSON.stringify({ active }),
+          });
+          loadFeeStructures();
+          showToast(active ? "Fee slab enabled" : "Fee slab disabled");
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      }
+
+      async function deleteFee(feeId) {
+        if (
+          !(await customConfirm(
+            "Confirm Deletion",
+            "Delete this fee slab? This cannot be undone.",
+          ))
+        )
+          return;
+        try {
+          await api(`/fees/${feeId}`, { method: "DELETE" });
+          loadFeeStructures();
+          showToast("Fee slab deleted");
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      }
+
+      async function cancelPending(feeId) {
+        try {
+          await api(`/fees/${feeId}/pending`, { method: "DELETE" });
+          loadFeeStructures();
+          showToast("Scheduled price change cancelled");
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      }
+
+      // ── Save audit ────────────────────────────────────────────────
+      document.getElementById("saveAuditBtn")?.addEventListener("click", async () => {
+          try {
+            await api("/app-settings", {
+              method: "PUT",
+              body: JSON.stringify({
+                audit_date:
+                  parseInt(document.getElementById("audit_date").value) || 5,
+                fine_amount:
+                  parseInt(document.getElementById("fine_amount").value) || 100,
+                admission_fee:
+                  parseInt(document.getElementById("admission_fee").value) || 0,
+                partial_fine_amount:
+                  parseInt(
+                    document.getElementById("partial_fine_amount").value,
+                  ) || 0,
+                partial_exemption_months:
+                  parseInt(
+                    document.getElementById("partial_exemption_months").value,
+                  ) || 0,
+                suspension_threshold:
+                  parseInt(
+                    document.getElementById("suspension_threshold").value,
+                  ) || 1,
+
+                operational_start_month:
+                  document.getElementById("operational_start_month").value || null,
+              }),
+            });
+            showToast("Audit settings saved");
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        });
+
+      // ── Copy registration URL ────────────────────────────────────
+      const _copyBtn = document.getElementById("copyRegLinkBtn");
+      if (_copyBtn) {
+        _copyBtn.addEventListener("click", () => {
+          const urlText = document.getElementById("regUrlText").textContent;
+          navigator.clipboard
+            .writeText(urlText)
+            .then(() => showToast("Login link copied!"))
+            .catch(() => showToast("Failed to copy link", "error"));
+        });
+      }
+
+      // ── Save SMTP settings ────────────────────────────────────────
+      document.getElementById("saveSmtpBtn")?.addEventListener("click", async () => {
+          const active = document.getElementById("email_active").checked
+            ? 1
+            : 0;
+          const host = document.getElementById("smtp_host").value.trim();
+          const port =
+            parseInt(document.getElementById("smtp_port").value) || 465;
+          const secure = document.getElementById("smtp_secure").checked ? 1 : 0;
+          const email = document.getElementById("sender_email").value.trim();
+          let pass = document.getElementById("sender_password").value;
+
+          if (pass === "********") {
+            // If password field is untouched, do not send password in PUT body to avoid overwriting it
+            pass = undefined;
+          }
+
+          try {
+            await api("/app-settings", {
+              method: "PUT",
+              body: JSON.stringify({
+                email_active: active,
+                smtp_host: host,
+                smtp_port: port,
+                smtp_secure: secure,
+                sender_email: email,
+                sender_password: pass,
+              }),
+            });
+            showToast("SMTP Email configuration saved");
+            loadSettings();
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        });
+
+      // ── Send Test Email ───────────────────────────────────────────
+      document.getElementById("testEmailBtn")?.addEventListener("click", async () => {
+          const toEmail = await customPrompt(
+            "Send Test Email",
+            "Enter recipient email address to send test email:",
+            "e.g. recipient@example.com",
+          );
+          if (!toEmail || toEmail.trim() === "") return;
+
+          try {
+            showToast("Sending test email...", "info");
+            const res = await api("/app-settings/test-email", {
+              method: "POST",
+              body: JSON.stringify({ toEmail: toEmail.trim() }),
+            });
+            showToast(res.message || "Test email sent successfully!");
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        });
+
+      // ── Change Admin Password ──────────────────────────────────────
+      document.getElementById("saveAdminPasswordBtn")?.addEventListener("click", async () => {
+          const oldPwd = document.getElementById("admin_old_password").value;
+          const newPwd = document.getElementById("admin_new_password").value;
+          const confirmPwd = document.getElementById("admin_confirm_password").value;
+
+          if (!oldPwd || !newPwd || !confirmPwd) {
+            showToast("All fields are required.", "error");
+            return;
+          }
+
+          if (newPwd.length < 8) {
+            showToast("New password must be at least 8 characters.", "error");
+            return;
+          }
+
+          if (newPwd !== confirmPwd) {
+            showToast("New passwords do not match.", "error");
+            return;
+          }
+
+          try {
+            await api("/admin/change-password", {
+              method: "POST",
+              body: JSON.stringify({
+                old_password: oldPwd,
+                new_password: newPwd
+              })
+            });
+            showToast("Administrator password updated successfully!");
+            document.getElementById("admin_old_password").value = "";
+            document.getElementById("admin_new_password").value = "";
+            document.getElementById("admin_confirm_password").value = "";
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        });
+
+      // ── Backup ────────────────────────────────────────────────────
+      document.getElementById("backupDbBtn")?.addEventListener("click", async () => {
+          try {
+            const res = await fetch("/api/backup/database", { credentials: "include" });
+            if (!res.ok) throw new Error("Backup failed");
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `studyspace-backup-${new Date().toISOString().split("T")[0]}.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Backup downloaded (includes photos)");
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        });
+
+      document.getElementById("restoreDbBtn")?.addEventListener("click", () => {
+        document.getElementById("restoreFile").click();
+      });
+
+      document.getElementById("restoreFile")?.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const fd = new FormData();
+          fd.append("file", file);
+          try {
+            await fetch("/api/backup/restore", { method: "POST", body: fd, credentials: "include" });
+            showToast("Restored — reloading…");
+            setTimeout(() => location.reload(), 1500);
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        });
+
+      // ── Reset ─────────────────────────────────────────────────────
+      document.getElementById("resetDbBtn")?.addEventListener("click", async () => {
+          if (
+            !(await customConfirm(
+              "Reset Database",
+              "Reset ALL data? This cannot be undone.",
+            ))
+          )
+            return;
+          if (
+            !(await customConfirm(
+              "Final Confirmation",
+              "Confirm: permanently delete everything and start fresh?",
+            ))
+          )
+            return;
+          try {
+            const res = await fetch("/api/backup/reset", { method: "POST", credentials: "include" });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              showToast(data.error || "Reset failed. Check server logs.", "error");
+              return;
+            }
+            showToast("Reset complete — reloading…");
+            setTimeout(() => location.reload(), 1500);
+          } catch (err) {
+            showToast("Network error: " + err.message, "error");
+          }
+        });
+
+      loadSettings();
+      window.onLiveUpdate = (data) => {
+        if (data.type === "settings") {
+          loadSettings();
+        }
+      };
+    </script>
+  </body>
+</html>

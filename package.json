@@ -1,0 +1,18 @@
+{
+  "name": "study-center-management-system",
+  "version": "1.0.0",
+  "description": "Study Center Management System - Express + SQLite + vanilla JS, launched as a Chrome app window",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.19.2",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.1"
+  }
+}

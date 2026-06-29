@@ -1,0 +1,1228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Self-Registration — StudySpace</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      /* ── Modern Premium Design System & UI Overrides ──────── */
+      :root {
+        --primary-gradient: linear-gradient(135deg, #0969da 0%, #044e96 100%);
+        --success-gradient: linear-gradient(135deg, #1a7f37 0%, #115e27 100%);
+        --accent-glow: rgba(9, 105, 218, 0.15);
+        --card-radius: 20px;
+        --transition-base: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* Light Theme Glassmorphism */
+        --glass-bg: rgba(255, 255, 255, 0.8);
+        --glass-border: rgba(208, 215, 222, 0.6);
+        --body-bg-gradient: radial-gradient(circle at 10% 20%, #eff6ff 0%, #f6f8fa 90%);
+        --card-shadow-premium: 0 20px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+      }
+
+      [data-theme="dark"] {
+        --primary-gradient: linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%);
+        --success-gradient: linear-gradient(135deg, #3fb950 0%, #2ea043 100%);
+        --accent-glow: rgba(56, 139, 253, 0.2);
+        
+        /* Dark Theme Glassmorphism */
+        --glass-bg: rgba(22, 27, 34, 0.75);
+        --glass-border: rgba(48, 54, 61, 0.5);
+        --body-bg-gradient: radial-gradient(circle at 10% 20%, #0d1117 0%, #070a0e 90%);
+        --card-shadow-premium: 0 20px 40px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        background: var(--body-bg-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 40px 20px;
+        margin: 0;
+        transition: background 0.3s ease;
+      }
+
+      .register-container {
+        max-width: 680px;
+        width: 100%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .register-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px) saturate(190%);
+        -webkit-backdrop-filter: blur(20px) saturate(190%);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--card-radius);
+        padding: 2.5rem;
+        box-shadow: var(--card-shadow-premium);
+        transition: var(--transition-base);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Subtle card border glow */
+      .register-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        opacity: 0.85;
+      }
+
+      .register-header {
+        text-align: center;
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-soft);
+      }
+
+      .register-header h1 {
+        font-family: "Plus Jakarta Sans", var(--font-sans);
+        font-size: 24px;
+        font-weight: 800;
+        margin: 0 0 6px;
+        color: var(--text);
+        letter-spacing: -0.03em;
+        background: linear-gradient(135deg, var(--text) 30%, var(--blue) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .register-header p {
+        font-size: 13.5px;
+        color: var(--text-muted);
+        margin: 0;
+      }
+
+      /* ── Modern Step Progress Indicator ──────── */
+      .step-progress-wrapper {
+        margin: 0 0 32px 0;
+        padding: 0 8px;
+      }
+
+      .step-progress-bar {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+
+      /* Background line */
+      .step-progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 18px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--border-soft);
+        z-index: 1;
+        border-radius: 2px;
+      }
+
+      /* Active progress line */
+      .step-progress-line {
+        position: absolute;
+        top: 18px;
+        left: 0;
+        height: 3px;
+        background: var(--primary-gradient);
+        z-index: 2;
+        border-radius: 2px;
+        transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 8px var(--accent-glow);
+      }
+
+      .step-node {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 3;
+        cursor: pointer;
+        transition: var(--transition-base);
+      }
+
+      .step-node-number {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--card-bg);
+        border: 2px solid var(--border);
+        color: var(--text-faint);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        transition: var(--transition-base);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .step-node-label {
+        font-family: "Plus Jakarta Sans", var(--font-sans);
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--text-faint);
+        margin-top: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        transition: var(--transition-base);
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      /* Active State */
+      .step-node.active .step-node-number {
+        border-color: var(--blue);
+        color: var(--blue);
+        background: var(--card-bg);
+        box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-md);
+        transform: scale(1.08);
+      }
+
+      .step-node.active .step-node-label {
+        color: var(--blue);
+        font-weight: 800;
+      }
+
+      /* Completed State */
+      .step-node.completed .step-node-number {
+        border-color: var(--green);
+        background: var(--green);
+        color: #ffffff !important;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .step-node.completed .step-node-number::after {
+        content: '✓';
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      /* Hide node number text when completed */
+      .step-node.completed .step-node-number {
+        font-size: 0;
+      }
+
+      .step-node.completed .step-node-label {
+        color: var(--text-muted);
+      }
+
+      @media (max-width: 540px) {
+        .step-node-label {
+          display: none; /* Hide labels on mobile to prevent overlap */
+        }
+        body {
+          padding: 15px 10px;
+        }
+        .register-card {
+          padding: 1.5rem;
+        }
+      }
+
+      /* ── Form Section & Fields ──────── */
+      .form-section-title-compact {
+        font-family: "Plus Jakarta Sans", var(--font-sans);
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-muted);
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border-soft);
+        padding-bottom: 8px;
+        margin: 0 0 20px 0;
+      }
+
+      .form-grid-responsive {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .field label {
+        font-family: "Plus Jakarta Sans", var(--font-sans);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      /* Beautiful Interactive Form Inputs */
+      input[type="text"],
+      input[type="tel"],
+      input[type="email"],
+      input[type="date"],
+      input[type="time"],
+      input[type="number"],
+      select,
+      textarea {
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13.5px;
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        transition: var(--transition-base);
+        outline: none;
+        box-shadow: var(--shadow-sm);
+      }
+
+      input:hover, select:hover, textarea:hover {
+        border-color: var(--text-faint);
+      }
+
+      input:focus, select:focus, textarea:focus {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 4px var(--accent-glow);
+        background: var(--card-bg);
+        transform: translateY(-1px);
+      }
+
+      /* Disabled styles */
+      input:disabled, select:disabled, textarea:disabled {
+        background: var(--border-soft);
+        color: var(--text-faint);
+        cursor: not-allowed;
+      }
+
+      /* Invalid state highlight */
+      input.invalid, select.invalid {
+        border-color: var(--red);
+        background: var(--red-light);
+      }
+
+      input.invalid:focus, select.invalid:focus {
+        box-shadow: 0 0 0 4px rgba(207, 34, 46, 0.15);
+      }
+
+      /* ── Seat Selection Grid ──────── */
+      .seat-grid-container {
+        background: var(--bg);
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-top: 10px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .seat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+        gap: 10px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 16px;
+        justify-items: center;
+        background: var(--card-bg);
+      }
+
+      .seat-select-chip {
+        height: 38px;
+        width: 100%;
+        background: var(--bg);
+        border: 1.5px solid var(--border);
+        color: var(--text-muted);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        transition: var(--transition-base);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .seat-select-chip:hover {
+        border-color: var(--blue);
+        background: var(--blue-light);
+        color: var(--blue);
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: var(--shadow-md);
+      }
+
+      .seat-select-chip.selected {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        color: #ffffff !important;
+        box-shadow: 0 6px 12px var(--accent-glow);
+        transform: translateY(-2px) scale(1.06);
+      }
+
+      .seat-select-chip.empty-label {
+        grid-column: 1 / -1;
+        background: transparent;
+        border: 1px dashed var(--border);
+        color: var(--text-faint);
+        font-weight: 500;
+        cursor: default;
+        height: 48px;
+      }
+
+      /* ── Wizard Footer Buttons ──────── */
+      .form-wizard-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 32px;
+        border-top: 1px solid var(--border-soft);
+        padding-top: 20px;
+      }
+
+      .btn {
+        font-family: "Plus Jakarta Sans", var(--font-sans);
+        font-size: 13.5px;
+        font-weight: 700;
+        padding: 10px 22px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: var(--transition-base);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        outline: none;
+        border: 1px solid transparent;
+      }
+
+      .btn-primary {
+        background: var(--primary-gradient);
+        color: #ffffff;
+        box-shadow: 0 4px 14px var(--accent-glow);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-1.5px);
+        box-shadow: 0 6px 20px var(--accent-glow);
+        filter: brightness(1.05);
+      }
+
+      .btn-primary:active {
+        transform: translateY(0.5px);
+      }
+
+      .btn-secondary {
+        background: var(--card-bg);
+        border-color: var(--border);
+        color: var(--text-muted);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn-secondary:hover {
+        background: var(--bg);
+        border-color: var(--text-faint);
+        color: var(--text);
+        transform: translateY(-1px);
+      }
+
+      .btn-danger {
+        background: var(--red-light);
+        border-color: rgba(207, 34, 46, 0.2);
+        color: var(--red);
+      }
+
+      .btn-danger:hover {
+        background: var(--red);
+        color: #ffffff;
+        border-color: transparent;
+        transform: translateY(-1.5px);
+        box-shadow: 0 4px 12px rgba(207, 34, 46, 0.15);
+      }
+
+      /* ── Success Card Upgrades ──────── */
+      .success-card {
+        text-align: center;
+        padding: 3.5rem 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .success-icon-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 80px;
+        margin-bottom: 8px;
+      }
+
+      .success-icon-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 3px solid var(--green-light);
+        animation: pulse-ring 2s infinite ease-out;
+      }
+
+      @keyframes pulse-ring {
+        0% { transform: scale(0.92); opacity: 1; }
+        50% { transform: scale(1.15); opacity: 0.4; }
+        100% { transform: scale(1.45); opacity: 0; }
+      }
+
+      .success-icon {
+        width: 72px;
+        height: 72px;
+        background: var(--success-gradient);
+        color: #ffffff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        box-shadow: 0 8px 24px rgba(26, 127, 55, 0.25);
+        z-index: 2;
+      }
+
+      .success-card h1 {
+        font-family: "Plus Jakarta Sans", var(--font-sans);
+        font-size: 24px;
+        font-weight: 800;
+        margin: 0;
+        color: var(--text);
+        letter-spacing: -0.03em;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Theme controller -->
+    <script>
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      })();
+    </script>
+
+    <div class="register-container">
+      <div class="register-card" id="formCard">
+        <div class="register-header">
+          <h1>StudySpace Admission Request</h1>
+          <p>Please enter your details to register your seat and timing</p>
+        </div>
+
+        <div id="errorBanner" class="error-banner" style="display: none; margin-bottom: 20px;"></div>
+
+        <form id="regForm" onsubmit="submitForm(event)">
+          <!-- Modern Step Progress Wizard Indicator -->
+          <div class="step-progress-wrapper">
+            <div class="step-progress-bar">
+              <div class="step-progress-line" id="stepProgressLine" style="width: 0%;"></div>
+              <div class="step-node active" id="stepNode-0" onclick="switchTab(0)">
+                <div class="step-node-number">1</div>
+                <div class="step-node-label">Profile</div>
+              </div>
+              <div class="step-node" id="stepNode-1" onclick="switchTab(1)">
+                <div class="step-node-number">2</div>
+                <div class="step-node-label">Family</div>
+              </div>
+              <div class="step-node" id="stepNode-2" onclick="switchTab(2)">
+                <div class="step-node-number">3</div>
+                <div class="step-node-label">Academic</div>
+              </div>
+              <div class="step-node" id="stepNode-3" onclick="switchTab(3)">
+                <div class="step-node-number">4</div>
+                <div class="step-node-label">Shift</div>
+              </div>
+              <div class="step-node" id="stepNode-4" onclick="switchTab(4)">
+                <div class="step-node-number">5</div>
+                <div class="step-node-label">Remarks</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 0: Profile -->
+          <div class="form-tab-content active" id="tab-0">
+            <h3 class="form-section-title-compact">Personal Profile Details</h3>
+            <div class="form-grid-responsive">
+              <div class="field">
+                <label for="form_number">FORM NO.</label>
+                <input type="text" id="form_number" placeholder="e.g. 269" />
+              </div>
+              <div class="field">
+                <label for="class">CLASS / EXAM BATCH</label>
+                <input type="text" id="class" placeholder="e.g. 12th, Graduate" />
+              </div>
+              <div class="field">
+                <label for="goal">GOAL / TARGET EXAM</label>
+                <input type="text" id="goal" placeholder="e.g. UPSC, NEET, SSC" />
+              </div>
+            </div>
+            <div class="field" style="margin-top: 16px;">
+              <label for="name">FULL NAME (IN CAPITAL LETTERS) *</label>
+              <input type="text" id="name" required placeholder="e.g. JOHN DOE" style="text-transform: uppercase;" />
+            </div>
+            <div class="form-grid-responsive" style="margin-top: 16px;">
+              <div class="field">
+                <label for="gender">GENDER *</label>
+                <select id="gender" required>
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="dob">DATE OF BIRTH *</label>
+                <input type="date" id="dob" required />
+              </div>
+            </div>
+            <div class="form-grid-responsive" style="margin-top: 16px;">
+              <div class="field">
+                <label for="phone">PHONE NUMBER *</label>
+                <input type="tel" id="phone" required placeholder="e.g. 9876543210" />
+              </div>
+              <div class="field">
+                <label for="whatsapp">WHATSAPP NUMBER *</label>
+                <input type="tel" id="whatsapp" required placeholder="e.g. 9876543210" />
+              </div>
+            </div>
+            <div class="form-grid-responsive" style="margin-top: 16px;">
+              <div class="field">
+                <label for="email">PERSONAL EMAIL *</label>
+                <input type="email" id="email" required placeholder="e.g. john@gmail.com" />
+              </div>
+              <div class="field">
+                <label for="aadhaar">AADHAAR NUMBER *</label>
+                <input type="text" id="aadhaar" required placeholder="12 digit number" maxlength="12" pattern="\d{12}" title="Please enter exact 12-digit Aadhaar number" />
+              </div>
+            </div>
+            <div class="form-grid-responsive" style="margin-top: 16px;">
+              <div class="field">
+                <label for="nationality">NATIONALITY</label>
+                <input type="text" id="nationality" value="Indian" />
+              </div>
+              <div class="field">
+                <label for="religion">RELIGION</label>
+                <input type="text" id="religion" placeholder="e.g. Hindu, Muslim, Sikh" />
+              </div>
+              <div class="field" style="display: none;">
+                <label for="photo_path">PHOTO PATH</label>
+                <input type="text" id="photo_path" />
+              </div>
+            </div>
+
+            <!-- Modern Photo Upload UI -->
+            <div class="field" style="display: flex; align-items: center; gap: 16px; margin-top: 16px; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-soft);">
+              <div id="photoPreviewContainer" style="width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--border); background: var(--card-bg); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+                <span id="photoPreviewPlaceholder" style="font-size: 24px; color: var(--text-faint); line-height: 1; margin-top: -2px;">👤</span>
+                <img id="photoPreviewImg" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1;">
+                <span style="font-size: 11.5px; font-weight: 600; color: var(--text);">Profile Photo</span>
+                <span style="font-size: 10px; color: var(--text-faint);">Max size 5MB. Will be auto-compressed to save space.</span>
+              </div>
+              <button type="button" class="btn btn-secondary" id="photo_upload_btn" style="padding: 6px 12px; font-size: 12px;">Upload</button>
+              <button type="button" class="btn btn-danger" id="photo_remove_btn" style="padding: 6px 12px; font-size: 12px; display: none;">Remove</button>
+              <input type="file" id="photo_file" accept="image/*" style="display: none;">
+              <input type="hidden" id="photo_data">
+            </div>
+          </div>
+
+          <!-- Tab 1: Family & Address -->
+          <div class="form-tab-content" id="tab-1">
+            <h3 class="form-section-title-compact">Family & Residential Address</h3>
+            <div class="form-grid-responsive">
+              <div class="field">
+                <label for="father_name">FATHER'S NAME *</label>
+                <input type="text" id="father_name" required placeholder="Father's Name" />
+              </div>
+              <div class="field">
+                <label for="mother_name">MOTHER'S NAME *</label>
+                <input type="text" id="mother_name" required placeholder="Mother's Name" />
+              </div>
+            </div>
+            <div class="form-grid-responsive" style="margin-top: 16px;">
+              <div class="field">
+                <label for="parent_occupation">PARENT'S OCCUPATION</label>
+                <input type="text" id="parent_occupation" placeholder="Occupation" />
+              </div>
+              <div class="field">
+                <label for="emergency_contact">EMERGENCY CONTACT</label>
+                <input type="tel" id="emergency_contact" placeholder="Parent/Guardian Phone" />
+              </div>
+            </div>
+            <div class="form-grid-responsive" style="margin-top: 20px; border-top: 1px solid var(--border-soft); padding-top: 16px;">
+              <div class="field">
+                <label for="village">VILLAGE / AREA *</label>
+                <input type="text" id="village" required placeholder="Village / Ward / Street" />
+              </div>
+              <div class="field">
+                <label for="po">POST OFFICE (P.O.) *</label>
+                <input type="text" id="po" required placeholder="Post Office Name" />
+              </div>
+              <div class="field">
+                <label for="ps">POLICE STATION (P.S.) *</label>
+                <input type="text" id="ps" required placeholder="Police Station Name" />
+              </div>
+            </div>
+            <div class="form-grid-responsive" style="margin-top: 16px;">
+              <div class="field">
+                <label for="district">DISTRICT *</label>
+                <input type="text" id="district" required placeholder="District Name" />
+              </div>
+              <div class="field">
+                <label for="state">STATE *</label>
+                <input type="text" id="state" required value="Bihar" placeholder="State Name" />
+              </div>
+              <div class="field">
+                <label for="pin">PIN CODE *</label>
+                <input type="text" id="pin" required placeholder="e.g. 848125" pattern="\d{6}" maxlength="6" />
+              </div>
+            </div>
+            <div class="field" style="display: none;">
+              <label for="address">FULL ADDRESS</label>
+              <textarea id="address" rows="1"></textarea>
+            </div>
+          </div>
+
+          <!-- Tab 2: Academic Qualifications -->
+          <div class="form-tab-content" id="tab-2">
+            <h3 class="form-section-title-compact">Prior Qualifications History</h3>
+            <div style="overflow-x: auto;">
+              <table class="table-roomy" style="width:100%; min-width:500px; border-collapse:collapse; font-size:12.5px;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-soft);">
+                    <th style="text-align:left; padding: 8px;">Exam / Class</th>
+                    <th style="text-align:left; padding: 8px;">Board / University</th>
+                    <th style="text-align:left; padding: 8px; width: 80px;">Year</th>
+                    <th style="text-align:left; padding: 8px; width: 100px;">Marks</th>
+                    <th style="text-align:left; padding: 8px; width: 80px;">Percentage %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-soft);">
+                    <td style="padding: 8px; font-weight:600;">Matric (10th)</td>
+                    <td style="padding: 4px;"><input type="text" id="matric_board" placeholder="e.g. BSEB, CBSE" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="number" id="matric_year" placeholder="Year" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="text" id="matric_marks" placeholder="e.g. 420/500" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="number" id="matric_percent" placeholder="%" step="0.01" style="width:100%; box-sizing:border-box;" /></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-soft);">
+                    <td style="padding: 8px; font-weight:600;">Intermediate (12th)</td>
+                    <td style="padding: 4px;"><input type="text" id="inter_board" placeholder="e.g. BSEB, CBSE" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="number" id="inter_year" placeholder="Year" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="text" id="inter_marks" placeholder="e.g. 380/500" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="number" id="inter_percent" placeholder="%" step="0.01" style="width:100%; box-sizing:border-box;" /></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-soft);">
+                    <td style="padding: 8px; font-weight:600;">Graduation</td>
+                    <td style="padding: 4px;"><input type="text" id="grad_board" placeholder="e.g. University" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="number" id="grad_year" placeholder="Year" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="text" id="grad_marks" placeholder="Marks" style="width:100%; box-sizing:border-box;" /></td>
+                    <td style="padding: 4px;"><input type="number" id="grad_percent" placeholder="%" step="0.01" style="width:100%; box-sizing:border-box;" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 3: Shift & Seat Preference -->
+          <div class="form-tab-content" id="tab-3">
+            <h3 class="form-section-title-compact">Shift Timings & Seat Preference</h3>
+            <div class="form-grid-responsive" style="display: none; margin-bottom: 16px;" id="joiningDateContainer">
+              <div class="field">
+                <label for="joining_date">ORIGINAL JOINING DATE *</label>
+                <input type="date" id="joining_date" required />
+                <p class="field-hint" id="joiningDateHint" style="font-size: 11px; color: var(--text-faint); margin: 4px 0 0; display: none;"></p>
+              </div>
+            </div>
+            <div class="form-grid-responsive">
+              <div class="field">
+                <label for="startTime">SHIFT START TIME *</label>
+                <input type="time" id="startTime" required />
+              </div>
+              <div class="field">
+                <label for="endTime">SHIFT END TIME *</label>
+                <input type="time" id="endTime" required />
+              </div>
+            </div>
+
+            <div class="field" style="margin-top: 20px; background: var(--bg); border: 1px dashed var(--border-soft); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.03em;">Seat Allocation Notice</span>
+              <span style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+                Your seat allocation will be calculated automatically by the allocation system upon admin approval.
+              </span>
+              <input type="hidden" id="selectedSeat" value="AUTO" required />
+            </div>
+          </div>
+
+          <!-- Tab 4: Remarks -->
+          <div class="form-tab-content" id="tab-4">
+            <h3 class="form-section-title-compact">Remarks & Special Requests</h3>
+            <div class="field">
+              <label for="remarks">REMARKS / SPECIAL REQUESTS</label>
+              <input type="text" id="remarks" placeholder="Any special requests or instructions" />
+            </div>
+
+            <!-- Mandatory Policy & Accuracy Confirmation Checkbox -->
+            <div class="field" style="margin-top: 18px; display: flex; flex-direction: row; align-items: flex-start; gap: 8px;">
+              <input type="checkbox" id="policy_agreement" required style="width: auto; margin-top: 3px; cursor: pointer;" />
+              <label for="policy_agreement" style="font-size: 12px; color: var(--text-muted); line-height: 1.5; text-transform: none; font-weight: normal; cursor: pointer; user-select: none;">
+                I hereby declare that all the details filled in this application are true, accurate, and complete to the best of my knowledge. I recognize and agree to respect the institute's policies, reputation guidelines, and operational rules.
+              </label>
+            </div>
+            
+            <div style="margin-top: 24px; padding: 12px; background: var(--bg); border: 1px solid var(--border-soft); border-radius: 6px; font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+              Please review all steps to ensure information correctness. The desk will process this digital application upon verification.
+            </div>
+          </div>
+
+          <!-- Wizard Footer Navigation -->
+          <div class="form-wizard-footer">
+            <button type="button" class="btn btn-secondary" id="prevBtn" onclick="stepTab(-1)" style="visibility: hidden;">Previous</button>
+            <button type="button" class="btn btn-primary" id="nextBtn" onclick="stepTab(1)">Next</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Success Screen -->
+      <div class="register-card success-card" id="successCard" style="display: none;">
+        <div class="success-icon-wrapper">
+          <div class="success-icon-ring"></div>
+          <div class="success-icon">
+            <svg class="success-svg" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="color: #ffffff; display: block;"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+        <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text);">Request Submitted!</h1>
+        <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6; max-width: 420px; margin: 0 auto;">
+          Your digital application and seat reservation have been successfully received. <br />
+          <strong style="color: var(--text); display: block; margin-top: 10px;">Please proceed to the reception desk to finalize your admission and payment setup.</strong>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      let currentTabIdx = 0;
+      const totalTabs = 5;
+
+      function setupPhotoUploader(fileInputEl, previewImgEl, placeholderEl, removeBtnEl, hiddenInputEl, onUpdateCallback) {
+        fileInputEl.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          if (file.size > 5 * 1024 * 1024) {
+            const errBanner = document.getElementById('errorBanner');
+            if (errBanner) {
+              errBanner.textContent = "Please select an image smaller than 5MB.";
+              errBanner.style.display = "block";
+              errBanner.scrollIntoView({ behavior: "smooth" });
+            } else {
+              alert("Please select an image smaller than 5MB.");
+            }
+            fileInputEl.value = "";
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              let width = img.width;
+              let height = img.height;
+              const max_size = 300;
+
+              if (width > height) {
+                if (width > max_size) {
+                  height *= max_size / width;
+                  width = max_size;
+                }
+              } else {
+                if (height > max_size) {
+                  width *= max_size / height;
+                  height = max_size;
+                }
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, width, height);
+
+              const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+
+              previewImgEl.src = dataUrl;
+              previewImgEl.style.display = "block";
+              placeholderEl.style.display = "none";
+              hiddenInputEl.value = dataUrl;
+              if (removeBtnEl) removeBtnEl.style.display = "inline-flex";
+
+              if (onUpdateCallback) onUpdateCallback(dataUrl);
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        };
+
+        if (removeBtnEl) {
+          removeBtnEl.onclick = () => {
+            fileInputEl.value = "";
+            previewImgEl.src = "";
+            previewImgEl.style.display = "none";
+            placeholderEl.style.display = "block";
+            hiddenInputEl.value = "";
+            removeBtnEl.style.display = "none";
+
+            if (onUpdateCallback) onUpdateCallback(null);
+          };
+        }
+      }
+
+      function setupAutoPercentage(marksId, percentId) {
+        const marksInput = document.getElementById(marksId);
+        const percentInput = document.getElementById(percentId);
+        if (!marksInput || !percentInput) return;
+
+        marksInput.addEventListener("input", () => {
+          const val = marksInput.value.trim();
+          const match = val.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+          if (match) {
+            const obtained = parseFloat(match[1]);
+            const max = parseFloat(match[2]);
+            if (!isNaN(obtained) && !isNaN(max) && max > 0) {
+              const percent = (obtained / max) * 100;
+              percentInput.value = parseFloat(percent.toFixed(2));
+            }
+          }
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const photoFile = document.getElementById("photo_file");
+        const photoUploadBtn = document.getElementById("photo_upload_btn");
+        const photoRemoveBtn = document.getElementById("photo_remove_btn");
+        const photoPreviewImg = document.getElementById("photoPreviewImg");
+        const photoPreviewPlaceholder = document.getElementById("photoPreviewPlaceholder");
+        const photoData = document.getElementById("photo_data");
+
+        if (photoUploadBtn && photoFile) {
+          photoUploadBtn.onclick = () => photoFile.click();
+        }
+
+        if (photoFile && photoPreviewImg && photoPreviewPlaceholder && photoData) {
+          setupPhotoUploader(photoFile, photoPreviewImg, photoPreviewPlaceholder, photoRemoveBtn, photoData, () => {
+            const container = document.getElementById('photoPreviewContainer');
+            if (container) container.style.borderColor = '';
+          });
+        }
+
+        // Auto calculate percentage for Matric, Intermediate, Graduation marks
+        setupAutoPercentage("matric_marks", "matric_percent");
+        setupAutoPercentage("inter_marks", "inter_percent");
+        setupAutoPercentage("grad_marks", "grad_percent");
+      });
+
+      function switchTab(idx) {
+        // Only allow moving to previous tabs, or the immediate next tab
+        if (idx > currentTabIdx + 1) {
+          return; // Block skipping ahead
+        }
+
+        // Validate when moving to the next tab
+        if (idx === currentTabIdx + 1) {
+          if (!validateCurrentTabFields(currentTabIdx)) {
+            return; // Stay on current tab if invalid
+          }
+          if (currentTabIdx === 0) {
+            const photoData = document.getElementById('photo_data');
+            if (!photoData || !photoData.value.trim()) {
+              const container = document.getElementById('photoPreviewContainer');
+              if (container) {
+                container.style.borderColor = '#cf222e';
+                container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              const errBanner = document.getElementById('errorBanner');
+              if (errBanner) {
+                errBanner.textContent = "Please upload your profile photo before continuing.";
+                errBanner.style.display = "block";
+              } else {
+                alert("Please upload your profile photo before continuing.");
+              }
+              return;
+            }
+          }
+        }
+
+        // Hide all contents & update step progress indicator
+        const contents = document.querySelectorAll('.form-tab-content');
+
+        contents.forEach((c, i) => {
+          if (i === idx) {
+            c.classList.add('active');
+          } else {
+            c.classList.remove('active');
+          }
+        });
+
+        // Update progress line width
+        const progressLine = document.getElementById('stepProgressLine');
+        if (progressLine) {
+          progressLine.style.width = `${(idx / (totalTabs - 1)) * 100}%`;
+        }
+
+        // Update step nodes active / completed classes explicitly for robust browser compatibility
+        for (let i = 0; i < totalTabs; i++) {
+          const node = document.getElementById(`stepNode-${i}`);
+          if (node) {
+            if (i === idx) {
+              node.classList.add('active');
+              node.classList.remove('completed');
+            } else {
+              node.classList.remove('active');
+              if (i < idx) {
+                node.classList.add('completed');
+              } else {
+                node.classList.remove('completed');
+              }
+            }
+          }
+        }
+
+        currentTabIdx = idx;
+
+        // Update footer buttons visibility & text
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        if (prevBtn) {
+          prevBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
+        }
+
+        if (nextBtn) {
+          if (idx === totalTabs - 1) {
+            nextBtn.textContent = 'Submit Registration';
+            nextBtn.type = 'submit'; // Change type to submit to submit form on final click
+          } else {
+            nextBtn.textContent = 'Next';
+            nextBtn.type = 'button'; // Change type to button so it doesn't submit
+          }
+        }
+        
+        // Scroll to top of form smoothly
+        const formCard = document.getElementById('formCard');
+        if (formCard) {
+          formCard.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+
+      function stepTab(step) {
+        const target = currentTabIdx + step;
+        if (target >= 0 && target < totalTabs) {
+          switchTab(target);
+        }
+      }
+
+      // Helper to validate only the inputs inside the active tab container
+      function validateCurrentTabFields(tabIdx) {
+        const tabEl = document.getElementById(`tab-${tabIdx}`);
+        if (!tabEl) return true;
+        
+        // Find all required inputs, selects, textareas inside this tab
+        const fields = tabEl.querySelectorAll('input[required], select[required], textarea[required]');
+        let valid = true;
+
+        fields.forEach(f => {
+          // Check validity
+          if (!f.checkValidity()) {
+            f.classList.add('invalid');
+            f.reportValidity();
+            valid = false;
+          } else {
+            f.classList.remove('invalid');
+          }
+        });
+
+        return valid;
+      }
+
+      // Fetch dynamic settings for branding
+      (async function initBranding() {
+        try {
+          const res = await fetch('/api/app-settings/public');
+          if (res.ok) {
+            const settings = await res.json();
+            const name = settings.institute_name || 'StudySpace';
+            document.title = `Student Self-Registration — ${name}`;
+            const headerEl = document.querySelector('.register-header h1');
+            if (headerEl) {
+              headerEl.textContent = `${name} Admission Request`;
+            }
+          }
+        } catch (err) {
+          console.error('Error loading branding:', err);
+        }
+      })();
+
+      // Fetch public registration config to handle transition mode
+      (async function initRegConfig() {
+        try {
+          const res = await fetch('/api/registrations/config');
+          if (res.ok) {
+            const config = await res.json();
+            const container = document.getElementById('joiningDateContainer');
+            const hint = document.getElementById('joiningDateHint');
+            
+            if (config.isTransitionMode) {
+              container.style.display = 'block';
+              if (hint) {
+                const [year, month] = config.operationalStartMonth.split('-');
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const fmtMonth = monthNames[parseInt(month) - 1] + ' ' + year;
+                hint.innerHTML = `Note: The center starts operations in <b>${fmtMonth}</b>. Your billing will start from that month.`;
+                hint.style.display = 'block';
+              }
+            } else {
+              container.style.display = 'none';
+              // Force default joining date to today
+              document.getElementById('joining_date').value = new Date().toISOString().slice(0, 10);
+            }
+          }
+        } catch (err) {
+          console.error('Error loading registration config:', err);
+        }
+      })();
+
+      // Default joining date to today
+      document.getElementById('joining_date').value = new Date().toISOString().slice(0, 10);
+
+      // Handle form submission
+      async function submitForm(e) {
+        e.preventDefault();
+        const errBanner = document.getElementById('errorBanner');
+        errBanner.style.display = 'none';
+
+        const seat = document.getElementById('selectedSeat').value || 'AUTO';
+
+        // Custom validation check for policy agreement checkbox
+        const agreement = document.getElementById('policy_agreement');
+        if (agreement && !agreement.checked) {
+          errBanner.textContent = 'You must confirm that your information is true and accept the institute policies to proceed.';
+          errBanner.style.display = 'block';
+          errBanner.scrollIntoView({ behavior: 'smooth' });
+          agreement.classList.add('invalid');
+          return;
+        } else if (agreement) {
+          agreement.classList.remove('invalid');
+        }
+
+        const village = document.getElementById('village').value.trim();
+        const po = document.getElementById('po').value.trim();
+        const ps = document.getElementById('ps').value.trim();
+        const district = document.getElementById('district').value.trim();
+        const state = document.getElementById('state').value.trim();
+        const pin = document.getElementById('pin').value.trim();
+        let address = "";
+        if (village || po || ps || district || state || pin) {
+          address = `Village: ${village}, P.O.: ${po}, P.S.: ${ps}, Dist: ${district}, State: ${state} - ${pin}`;
+        } else {
+          address = document.getElementById('address').value.trim();
+        }
+
+        const education_history = [
+          {
+            level: "Matric",
+            board: document.getElementById('matric_board').value.trim(),
+            year: document.getElementById('matric_year').value.trim(),
+            marks: document.getElementById('matric_marks').value.trim(),
+            percent: document.getElementById('matric_percent').value.trim()
+          },
+          {
+            level: "Intermediate",
+            board: document.getElementById('inter_board').value.trim(),
+            year: document.getElementById('inter_year').value.trim(),
+            marks: document.getElementById('inter_marks').value.trim(),
+            percent: document.getElementById('inter_percent').value.trim()
+          },
+          {
+            level: "Graduation",
+            board: document.getElementById('grad_board').value.trim(),
+            year: document.getElementById('grad_year').value.trim(),
+            marks: document.getElementById('grad_marks').value.trim(),
+            percent: document.getElementById('grad_percent').value.trim()
+          }
+        ];
+
+        const payload = {
+          name: document.getElementById('name').value,
+          gender: document.getElementById('gender').value,
+          dob: document.getElementById('dob').value,
+          phone: document.getElementById('phone').value,
+          whatsapp: document.getElementById('whatsapp').value,
+          email: document.getElementById('email').value,
+          aadhaar_number: document.getElementById('aadhaar').value,
+          father_name: document.getElementById('father_name').value,
+          mother_name: document.getElementById('mother_name').value,
+          emergency_contact: document.getElementById('emergency_contact').value,
+          address: address,
+          joining_date: document.getElementById('joining_date').value,
+          preferred_seat: seat,
+          preferred_start_time: document.getElementById('startTime').value,
+          preferred_end_time: document.getElementById('endTime').value,
+          remarks: document.getElementById('remarks').value,
+          
+          form_number: document.getElementById('form_number').value.trim(),
+          class: document.getElementById('class').value.trim(),
+          parent_occupation: document.getElementById('parent_occupation').value.trim(),
+          nationality: document.getElementById('nationality').value.trim(),
+          religion: document.getElementById('religion').value.trim(),
+          goal: document.getElementById('goal').value.trim(),
+          photo_path: document.getElementById('photo_path').value.trim(),
+          photo_data: document.getElementById('photo_data').value.trim(),
+          address_village: village,
+          address_po: po,
+          address_ps: ps,
+          address_district: district,
+          address_state: state,
+          address_pin: pin,
+          education_history: JSON.stringify(education_history)
+        };
+
+        try {
+          const res = await fetch('/api/registrations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          
+          const result = await res.json();
+          if (!res.ok) {
+            throw new Error(result.error || 'Submission failed');
+          }
+
+          // Show success card, hide form card
+          document.getElementById('formCard').style.display = 'none';
+          document.getElementById('successCard').style.display = 'block';
+          window.scrollTo(0, 0);
+        } catch (err) {
+          errBanner.textContent = err.message;
+          errBanner.style.display = 'block';
+          errBanner.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    </script>
+  </body>
+</html>

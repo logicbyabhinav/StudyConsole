@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Manage billing records, fees collection, and student dues.">
+  <title>Payments — StudySpace</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Payments Page Specific Styles */
+    .payments-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-row .search-input {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .toolbar-row select, .toolbar-row input[type="month"] {
+      width: auto;
+      min-width: 150px;
+    }
+
+    /* Badges */
+    .badge-due {
+      background: var(--blue-light);
+      color: var(--blue);
+      border: 1px solid rgba(56, 139, 253, 0.15);
+    }
+    .badge-partial {
+      background: var(--orange-light);
+      color: var(--orange);
+      border: 1px solid rgba(210, 153, 34, 0.15);
+    }
+    .badge-overdue {
+      background: var(--red-light);
+      color: var(--red);
+      border: 1px solid rgba(248, 81, 73, 0.15);
+    }
+    .badge-paid {
+      background: var(--green-light);
+      color: var(--green);
+      border: 1px solid rgba(63, 185, 80, 0.15);
+    }
+
+    .record-btn {
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid var(--blue);
+      background: var(--card-bg);
+      color: var(--blue);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.15s ease;
+    }
+    .record-btn:hover {
+      background: var(--blue-light);
+    }
+
+    /* Modals specific fields */
+    .payment-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 12, 16, 0.4);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .payment-modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .payment-modal {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(15px) scale(0.96);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s, border-color 0.2s;
+      overflow: hidden;
+    }
+    .payment-modal-overlay.open .payment-modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .payment-summary-block {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 12.0px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border-soft);
+    }
+    .payment-summary-row {
+      display: flex;
+      justify-content: space-between;
+    }
+    .payment-summary-row span:last-child {
+      font-weight: 600;
+    }
+
+    .new-due-highlight {
+      font-weight: 700;
+      color: var(--orange);
+    }
+
+    /* Print CSS — show only the receipt modal when printing */
+    @media print {
+      body > *:not(#receiptModalOverlay) { display: none !important; }
+      #receiptModalOverlay {
+        position: static !important;
+        background: none !important;
+        backdrop-filter: none !important;
+        opacity: 1 !important;
+        pointer-events: all !important;
+        display: block !important;
+      }
+      .payment-modal {
+        box-shadow: none !important;
+        border: none !important;
+        transform: none !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      #receiptPrintBtn, #receiptCloseBtn { display: none !important; }
+    }
+
+    /* Print receipt styles */
+    .receipt-lbl {
+      color: var(--text-faint);
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+    .receipt-val {
+      font-size: 13.5px;
+      color: var(--text);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div id="shell"></div>
+  <div class="toast" id="toast">
+    <span class="toast-dot" id="toastDot"></span>
+    <span id="toastMsg"></span>
+  </div>
+
+  <!-- Record Payment Modal -->
+  <div class="payment-modal-overlay" id="payModalOverlay" role="dialog" aria-modal="true">
+    <div class="payment-modal">
+      <div class="modal-header">
+        <h3 id="payModalTitle">Record Payment</h3>
+        <p id="payModalStudentName">Student Name &middot; Billing Month</p>
+      </div>
+      <div class="modal-body">
+        <div id="payModalError" class="error-banner" style="display:none; margin-bottom:12px;"></div>
+        
+        <div class="payment-summary-block">
+          <div class="payment-summary-row">
+            <span>Base fee:</span>
+            <span id="payModalBase">₹0</span>
+          </div>
+          <div class="payment-summary-row">
+            <span>Admission fee:</span>
+            <span id="payModalAdmission">₹0</span>
+          </div>
+          <div class="payment-summary-row">
+            <span>Late fine:</span>
+            <span id="payModalFine">₹0</span>
+          </div>
+          <div class="payment-summary-row" style="border-top:1px solid var(--border-soft); padding-top:6px; margin-top:4px;">
+            <span>Total Expected:</span>
+            <span id="payModalTotal">₹0</span>
+          </div>
+          <div class="payment-summary-row">
+            <span>Already paid:</span>
+            <span id="payModalPaid">₹0</span>
+          </div>
+          <div class="payment-summary-row" style="border-top:1px dashed var(--border-soft); padding-top:6px; margin-top:4px; font-weight:700;">
+            <span>Outstanding Balance:</span>
+            <span id="payModalOutstanding" style="color:var(--red);">₹0</span>
+          </div>
+        </div>
+
+        <div class="payment-summary-block" id="payHistoryBlock" style="display:none; background:var(--orange-light); border:1px solid #e2c97e; padding:10px 12px; border-radius:6px; font-size:12.5px;">
+          <div style="font-weight:700; font-family:var(--font-sans); margin-bottom:6px; color:#5a4000;">Previous Payments:</div>
+          <div id="payHistoryList" style="display:flex; flex-direction:column; gap:4px; font-family:var(--font-mono); font-size:11.5px; color:#5a4000;">
+          </div>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: 1fr; gap: 14px;">
+          <div class="field">
+            <label>PAYING AMOUNT (₹) *</label>
+            <input type="number" id="payAmount" min="0" placeholder="Enter amount paid physically" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>PAYMENT MODE *</label>
+            <select id="payMode">
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>BILL NO *</label>
+            <input type="text" id="payBillNo" placeholder="4 or 5 digits" maxlength="5" autocomplete="off">
+          </div>
+          <div class="payment-summary-row" style="font-family:var(--font-mono); font-size:12px; margin-top:4px; border-top:1px solid var(--border-soft); padding-top:8px;">
+            <span>Remaining Dues after this:</span>
+            <span id="payModalRemaining" class="new-due-highlight">₹0</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="payCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="paySubmitBtn">Save Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt / Bill Overlay Modal — compact print-ready design -->
+  <div class="payment-modal-overlay" id="receiptModalOverlay" role="dialog" aria-modal="true">
+    <div class="payment-modal" style="max-width: 420px; border-radius: 12px; overflow: hidden;">
+
+      <!-- Header: institute name + RECEIPT label on same row -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 10px; border-bottom: 2px dashed var(--border-soft);">
+        <div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.02em;" id="receiptInstituteName">StudySpace</div>
+          <div style="font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-top: 1px;">Official Payment Receipt</div>
+        </div>
+        <div style="font-size: 10px; font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); border: 1px solid var(--border-soft); border-radius: 4px; padding: 3px 7px;">RECEIPT</div>
+      </div>
+
+      <div style="padding: 14px 18px; display: flex; flex-direction: column; gap: 12px;">
+
+        <!-- Two-column info block: student details | receipt metadata -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-soft);">
+          <div>
+            <div class="receipt-lbl">Student</div>
+            <div class="receipt-val" id="receiptStudentName">—</div>
+          </div>
+          <div>
+            <div class="receipt-lbl">Bill No</div>
+            <div class="receipt-val mono" id="receiptBillNo">—</div>
+          </div>
+          <div>
+            <div class="receipt-lbl">S/O · D/O</div>
+            <div class="receipt-val" id="receiptFatherName">—</div>
+          </div>
+          <div>
+            <div class="receipt-lbl">Month</div>
+            <div class="receipt-val mono" id="receiptBillingMonth">—</div>
+          </div>
+          <div>
+            <div class="receipt-lbl">Phone</div>
+            <div class="receipt-val mono" id="receiptStudentPhone">—</div>
+          </div>
+          <div>
+            <div class="receipt-lbl">Date</div>
+            <div class="receipt-val mono" id="receiptPaymentDate">—</div>
+          </div>
+          <div>
+            <div class="receipt-lbl">Student ID</div>
+            <div class="receipt-val mono" id="receiptStudentId">—</div>
+          </div>
+          <div>
+            <div class="receipt-lbl">Mode</div>
+            <div class="receipt-val mono" id="receiptPaymentMode">—</div>
+          </div>
+          <div style="grid-column: span 2; margin-top: 4px; border-top: 1px dashed var(--border-soft); padding-top: 6px; display: none;" id="receiptPaymentIdBlock">
+            <div class="receipt-lbl">Payment ID</div>
+            <div class="receipt-val mono" id="receiptPaymentId">—</div>
+          </div>
+        </div>
+
+        <!-- Fee breakdown: flex rows, skip zero-value rows via JS -->
+        <div style="display: flex; flex-direction: column; gap: 3px; font-family: var(--font-mono); font-size: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-soft);">
+          <div class="receipt-fee-row" id="receiptBaseRow" style="display:flex; justify-content:space-between;">
+            <span>Monthly Fee</span><span id="receiptBaseFee">₹0</span>
+          </div>
+          <div class="receipt-fee-row" id="receiptAdmissionRow" style="display:none; justify-content:space-between;">
+            <span>Admission Fee</span><span id="receiptAdmissionFee">₹0</span>
+          </div>
+          <div class="receipt-fee-row" id="receiptFineRow" style="display:none; justify-content:space-between;">
+            <span>Late Fine</span><span id="receiptFineAmount">₹0</span>
+          </div>
+          <div style="border-top: 1px solid var(--border-soft); margin: 4px 0;"></div>
+          <div style="display:flex; justify-content:space-between; font-weight:700;">
+            <span>Total Expected</span><span id="receiptTotalExpected">₹0</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; color:var(--green); font-weight:600;">
+            <span>Collected</span><span id="receiptTotalPaid">₹0</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-weight:700;" id="receiptBalanceRow">
+            <span>Balance Due</span><span id="receiptRemainingDue">₹0</span>
+          </div>
+          <div id="receiptNoteRow" style="display:none; font-size:11px; color:var(--text-muted); font-style:italic; border-top:1px dashed var(--border-soft); padding-top:6px; margin-top:4px; text-align:left; line-height:1.3;">
+            <span id="receiptNote"></span>
+          </div>
+        </div>
+
+        <!-- Transaction pills (only if > 1 transaction) -->
+        <div id="receiptTransactionsBlock" style="display:none; padding-bottom: 10px; border-bottom: 1px solid var(--border-soft);">
+          <div id="receiptTransactionsList" style="font-family: var(--font-mono); font-size: 11px; color: var(--text); display: flex; flex-direction: column; gap: 3px;">
+          </div>
+        </div>
+
+        <!-- Status line + action row -->
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div id="receiptStatusSummary" style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 0.02em;"></div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary" id="receiptCloseBtn" style="padding:5px 12px; font-size:12px;">Close</button>
+            <button class="btn btn-primary" id="receiptPrintBtn" onclick="window.print()" style="padding:5px 12px; font-size:12px;">Print</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+
+  <script src="js/common.js"></script>
+  <script>
+    renderShell('payments', 'Payments', 'Track revenues, record payments, and manage students outstanding dues');
+
+    const content = document.getElementById('page-content');
+    content.innerHTML = `
+      <div class="payments-layout">
+        
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="label">Billed This Month</div>
+            <div class="value" id="sumBilled">₹0</div>
+            <div class="sub">Active plans + admissions + fines</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Collected This Month</div>
+            <div class="value" style="color:var(--green);" id="sumCollected">₹0</div>
+            <div class="sub">Total revenue received</div>
+          </div>
+          <div class="summary-card warn">
+            <div class="label">Outstanding (All Months)</div>
+            <div class="value" style="color:var(--red);" id="sumOutstanding">₹0</div>
+            <div class="sub">Total student debt across time</div>
+          </div>
+        </div>
+
+        <!-- Filter and Search Bar -->
+        <div class="card-flat" style="padding: 16px;">
+          <div class="toolbar-row">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by student name or bill number...">
+            
+            <div class="field" style="flex-direction:row; align-items:center; gap:8px;">
+              <label style="white-space:nowrap; margin-bottom:0;">Month:</label>
+              <input type="month" id="monthFilter" class="status-filter">
+            </div>
+
+            <div class="field" style="flex-direction:row; align-items:center; gap:8px;">
+              <label style="white-space:nowrap; margin-bottom:0;">Status:</label>
+              <select id="statusFilter" class="status-filter">
+                <option value="">All Statuses</option>
+                <option value="Due">Due</option>
+                <option value="Partial">Partial</option>
+                <option value="Overdue">Overdue</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing Register Table -->
+        <div class="card-flat">
+          <table class="table-roomy">
+            <thead>
+              <tr>
+                <th>STUDENT</th>
+                <th>ID</th>
+                <th>MONTH</th>
+                <th>BASE FEE</th>
+                <th>ADMISSION</th>
+                <th>LATE FINE</th>
+                <th>EXPECTED</th>
+                <th>PAID</th>
+                <th>DUE</th>
+                <th>STATUS</th>
+                <th>MODE</th>
+                <th>BILL NO.</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="paymentRows">
+              <tr><td colspan="13" style="color:var(--text-faint); font-family:var(--font-mono);">Loading billing register...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    `;
+
+    // State Variables
+    let paymentsCache = [];
+    let selectedRecord = null;
+    let _toastTimer;
+
+    // Toast Alert helper
+    function showToast(msg, type = 'success') {
+      const el = document.getElementById('toast');
+      el.className = `toast ${type}`;
+      document.getElementById('toastMsg').textContent = msg;
+      el.classList.add('show');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // Set Default Filters
+    const currentMonthStr = new Date().toISOString().slice(0, 7);
+    document.getElementById('monthFilter').value = currentMonthStr;
+
+    // Load Metrics
+    async function loadMetrics() {
+      const month = document.getElementById('monthFilter').value || currentMonthStr;
+      try {
+        const metrics = await api(`/payments/summary?month=${month}`);
+        document.getElementById('sumBilled').textContent = '₹' + (metrics.total_billed || 0).toLocaleString('en-IN');
+        document.getElementById('sumCollected').textContent = '₹' + (metrics.total_collected || 0).toLocaleString('en-IN');
+        document.getElementById('sumOutstanding').textContent = '₹' + (metrics.all_time_outstanding || 0).toLocaleString('en-IN');
+      } catch (err) {
+        showToast('Failed to load metrics: ' + err.message, 'error');
+      }
+    }
+
+    // Load Payments List
+    async function loadPayments() {
+      const tbody = document.getElementById('paymentRows');
+      const month = document.getElementById('monthFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      
+      let url = '/payments';
+      const params = [];
+      if (month) params.push(`month=${month}`);
+      if (status) params.push(`status=${status}`);
+      if (params.length) url += '?' + params.join('&');
+
+      try {
+        paymentsCache = await api(url);
+        renderPaymentRows();
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="13" style="color:var(--red); font-family:var(--font-mono);">${err.message}</td></tr>`;
+      }
+    }
+
+    // Render Payments Rows
+    function renderPaymentRows() {
+      const tbody = document.getElementById('paymentRows');
+      const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+
+      const filtered = paymentsCache.filter(r => {
+        if (!q) return true;
+        const nameMatch = r.student_name.toLowerCase().includes(q);
+        const billMatch = (r.bill_number || '').toLowerCase().includes(q) || 
+                          (r.all_bill_numbers || '').toLowerCase().includes(q);
+        return nameMatch || billMatch;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" style="color:var(--text-faint); font-family:var(--font-mono);">No billing records found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const expected = r.base_fee + r.admission_fee + r.fine_amount;
+        const paid = r.amount_paid || 0;
+        const due = r.due_amount;
+        
+        let badgeClass = 'badge-due';
+        if (r.status === 'Paid') badgeClass = 'badge-paid';
+        if (r.status === 'Partial') badgeClass = 'badge-partial';
+        if (r.status === 'Overdue') badgeClass = 'badge-overdue';
+
+        const canPay = r.status !== 'Paid';
+        const actionHtml = canPay
+          ? `<button class="record-btn" onclick="openPayModal(${r.billing_id})">Record Payment</button>`
+          : `<button class="record-btn" style="border-color:var(--text-muted);color:var(--text-muted);" onclick="openReceiptModal(${r.billing_id})">Receipt</button>`;
+
+        const billNoCell = r.bill_number 
+          ? `<span style="color:var(--blue); cursor:pointer; text-decoration:underline; font-weight:600;" onclick="openReceiptModal(${r.billing_id})">${r.bill_number}</span>`
+          : `<span style="color:var(--text-faint); cursor:pointer; text-decoration:underline; font-size:11.5px;" onclick="openPayModal(${r.billing_id})">Record</span>`;
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:600; text-align:left;">${r.student_name}</div>
+              <div style="font-size:11px; color:var(--text-faint); text-align:left;">${r.student_phone}</div>
+            </td>
+            <td class="mono">STC-${String(r.student_id).padStart(4, '0')}</td>
+            <td class="mono">${r.billing_month}</td>
+            <td class="mono" style="font-weight:500;">₹${r.base_fee.toLocaleString('en-IN')}</td>
+            <td class="mono">₹${r.admission_fee.toLocaleString('en-IN')}</td>
+            <td class="mono" style="color:${r.fine_amount > 0 ? 'var(--red)' : 'inherit'};">₹${r.fine_amount.toLocaleString('en-IN')}</td>
+            <td class="mono" style="font-weight:600;">₹${expected.toLocaleString('en-IN')}</td>
+            <td class="mono" style="color:var(--green); font-weight:500;">₹${paid.toLocaleString('en-IN')}</td>
+            <td class="mono" style="color:${due > 0 ? 'var(--orange)' : 'inherit'}; font-weight:600;">₹${due.toLocaleString('en-IN')}</td>
+            <td><span class="badge ${badgeClass}">${r.status}</span></td>
+            <td>${r.payment_mode || '—'}</td>
+            <td class="mono" style="font-size:12px;">${billNoCell}</td>
+            <td>${actionHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Modal Control functions
+    window.openPayModal = function(billingId) {
+      selectedRecord = paymentsCache.find(r => r.billing_id === billingId);
+      if (!selectedRecord) return;
+
+      const overlay = document.getElementById('payModalOverlay');
+      document.getElementById('payModalStudentName').textContent = `${selectedRecord.student_name} &middot; Billing Month: ${selectedRecord.billing_month}`;
+      
+      const expected = selectedRecord.base_fee + selectedRecord.admission_fee + selectedRecord.fine_amount;
+      const paid = selectedRecord.amount_paid || 0;
+      const outstanding = expected - paid;
+
+      document.getElementById('payModalBase').textContent = `₹${selectedRecord.base_fee.toLocaleString('en-IN')}`;
+      document.getElementById('payModalAdmission').textContent = `₹${selectedRecord.admission_fee.toLocaleString('en-IN')}`;
+      document.getElementById('payModalFine').textContent = `₹${selectedRecord.fine_amount.toLocaleString('en-IN')}`;
+      document.getElementById('payModalTotal').textContent = `₹${expected.toLocaleString('en-IN')}`;
+      document.getElementById('payModalPaid').textContent = `₹${paid.toLocaleString('en-IN')}`;
+      document.getElementById('payModalOutstanding').textContent = `₹${outstanding.toLocaleString('en-IN')}`;
+      
+      const amountInput = document.getElementById('payAmount');
+      amountInput.value = outstanding;
+      amountInput.max = outstanding;
+
+      const billInput = document.getElementById('payBillNo');
+      billInput.value = '';
+
+      document.getElementById('payModalError').style.display = 'none';
+      document.getElementById('payModalRemaining').textContent = '₹0';
+
+      // Fetch transaction history
+      const historyBlock = document.getElementById('payHistoryBlock');
+      const historyList = document.getElementById('payHistoryList');
+      historyBlock.style.display = 'none';
+      historyList.innerHTML = '';
+
+      api(`/payments/${billingId}/transactions`)
+        .then(txs => {
+          if (txs && txs.length > 0) {
+            historyList.innerHTML = txs.map(t => 
+              `<div>&bull; ₹${t.amount_paid.toLocaleString('en-IN')} via ${t.payment_mode} on ${t.payment_date} (Bill: ${t.bill_number}, ID: ${t.payment_id || '—'})</div>`
+            ).join('');
+            historyBlock.style.display = 'block';
+          }
+        })
+        .catch(err => console.error("Error fetching transactions:", err));
+
+      overlay.classList.add('open');
+      setTimeout(() => amountInput.focus(), 120);
+    }
+
+    function closePayModal() {
+      document.getElementById('payModalOverlay').classList.remove('open');
+      selectedRecord = null;
+    }
+
+
+
+    // Receipt Modal Control Functions
+    window.openReceiptModal = async function(billingId) {
+      const rec = paymentsCache.find(r => r.billing_id === billingId);
+      if (!rec) return;
+
+      const overlay = document.getElementById('receiptModalOverlay');
+      
+      // Load institute name
+      const instName = sessionStorage.getItem('institute_name') || 'Study Center';
+      document.getElementById('receiptInstituteName').textContent = instName;
+      
+      // Load student details
+      document.getElementById('receiptStudentName').textContent = rec.student_name;
+      document.getElementById('receiptStudentPhone').textContent = rec.student_phone;
+      document.getElementById('receiptFatherName').textContent = rec.father_name || '—';
+      document.getElementById('receiptStudentId').textContent = `STC-${String(rec.student_id).padStart(4, '0')}`;
+      
+      // Load bill metadata
+      document.getElementById('receiptBillNo').textContent = rec.bill_number || '—';
+      document.getElementById('receiptBillingMonth').textContent = rec.billing_month;
+      document.getElementById('receiptPaymentDate').textContent = rec.payment_date || '—';
+      document.getElementById('receiptPaymentMode').textContent = rec.payment_mode || '—';
+      
+      // Breakdown values
+      const expected = rec.base_fee + rec.admission_fee + rec.fine_amount;
+      const paid = rec.amount_paid || 0;
+      const due = rec.due_amount;
+      
+      document.getElementById('receiptBaseFee').textContent = `₹${rec.base_fee.toLocaleString('en-IN')}`;
+      
+      const admRow = document.getElementById('receiptAdmissionRow');
+      if (rec.admission_fee > 0) {
+        document.getElementById('receiptAdmissionFee').textContent = `₹${rec.admission_fee.toLocaleString('en-IN')}`;
+        admRow.style.display = 'flex';
+      } else {
+        admRow.style.display = 'none';
+      }
+
+      const fineRow = document.getElementById('receiptFineRow');
+      if (rec.fine_amount > 0) {
+        document.getElementById('receiptFineAmount').textContent = `₹${rec.fine_amount.toLocaleString('en-IN')}`;
+        fineRow.style.display = 'flex';
+      } else {
+        fineRow.style.display = 'none';
+      }
+
+      document.getElementById('receiptTotalExpected').textContent = `₹${expected.toLocaleString('en-IN')}`;
+      document.getElementById('receiptTotalPaid').textContent = `₹${paid.toLocaleString('en-IN')}`;
+      document.getElementById('receiptRemainingDue').textContent = `₹${due.toLocaleString('en-IN')}`;
+
+      // Color the balance due row
+      const balanceRow = document.getElementById('receiptBalanceRow');
+      if (balanceRow) {
+        balanceRow.style.color = due > 0 ? 'var(--orange)' : 'var(--text-muted)';
+      }
+
+      const noteRow = document.getElementById('receiptNoteRow');
+      if (rec.note) {
+        document.getElementById('receiptNote').textContent = `Note: ${rec.note}`;
+        noteRow.style.display = 'block';
+      } else {
+        noteRow.style.display = 'none';
+      }
+      
+      // Status summary — compact single line
+      const summaryEl = document.getElementById('receiptStatusSummary');
+      summaryEl.className = '';
+      
+      try {
+        const txs = await api(`/payments/${billingId}/transactions`);
+        if (txs && txs.length > 0) {
+          const sortedTxs = [...txs].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+          
+          // 1. Combined Bill No (Receipt No)
+          const billNumbers = sortedTxs.map(t => t.bill_number);
+          const firstBill = billNumbers[0];
+          const allSameBillMonth = billNumbers.every(b => b.substring(0, 7) === firstBill.substring(0, 7));
+          let combinedBillNo = "";
+          if (allSameBillMonth) {
+            const monthPrefix = firstBill.substring(0, 8); // "YYYY-MM-"
+            const suffixes = sortedTxs.map(t => {
+              const parts = t.bill_number.split('-');
+              return parts[parts.length - 1];
+            });
+            combinedBillNo = monthPrefix + suffixes.join('/');
+          } else {
+            combinedBillNo = billNumbers.join(' / ');
+          }
+          document.getElementById('receiptBillNo').textContent = combinedBillNo;
+          
+          // 2. Combined Payment Date
+          const paymentDates = sortedTxs.map(t => t.payment_date);
+          const firstDate = paymentDates[0];
+          const allSameMonth = paymentDates.every(d => d.substring(0, 7) === firstDate.substring(0, 7));
+          let combinedPaymentDate = "";
+          if (allSameMonth) {
+            const datePrefix = firstDate.substring(0, 8); // "YYYY-MM-"
+            const dateSuffixes = sortedTxs.map(t => {
+              const parts = t.payment_date.split('-');
+              return parts[parts.length - 1];
+            });
+            combinedPaymentDate = datePrefix + dateSuffixes.join('/');
+          } else {
+            combinedPaymentDate = paymentDates.join(' / ');
+          }
+          document.getElementById('receiptPaymentDate').textContent = combinedPaymentDate;
+          
+          // 3. Combined Payment Mode
+          const modes = sortedTxs.map(t => t.payment_mode);
+          const uniqueModes = [...new Set(modes)];
+          document.getElementById('receiptPaymentMode').textContent = uniqueModes.join('/');
+
+          // 4. Combined Payment ID
+          const paymentIds = sortedTxs.map(t => t.payment_id || '—');
+          document.getElementById('receiptPaymentId').textContent = paymentIds.join(' / ');
+          document.getElementById('receiptPaymentIdBlock').style.display = 'block';
+
+          // Show transactions only if > 1 (single payment = bill number in header is enough)
+          if (sortedTxs.length > 1) {
+            document.getElementById('receiptTransactionsBlock').style.display = 'block';
+            document.getElementById('receiptTransactionsList').innerHTML = sortedTxs.map(t => {
+              const d = t.payment_date ? t.payment_date.replace(/^\d{4}-/, '').replace('-', ' ') : '';
+              return `<span>#${t.bill_number.split('-').pop()} (ID: ${t.payment_id || '—'}) ₹${t.amount_paid.toLocaleString('en-IN')} ${t.payment_mode} · ${d}</span>`;
+            }).join('');
+          } else {
+            document.getElementById('receiptTransactionsBlock').style.display = 'none';
+          }
+        } else {
+          document.getElementById('receiptPaymentIdBlock').style.display = 'none';
+          document.getElementById('receiptTransactionsBlock').style.display = 'none';
+        }
+
+        if (rec.status === 'Paid') {
+          summaryEl.style.color = 'var(--green)';
+          summaryEl.textContent = '✓ PAID IN FULL';
+        } else if (rec.status === 'Partial') {
+          summaryEl.style.color = 'var(--orange)';
+          summaryEl.textContent = `₹${due.toLocaleString('en-IN')} balance remaining`;
+        } else {
+          summaryEl.style.color = 'var(--red)';
+          summaryEl.textContent = `₹${expected.toLocaleString('en-IN')} overdue / unpaid`;
+        }
+      } catch (err) {
+        document.getElementById('receiptTransactionsBlock').style.display = 'none';
+        summaryEl.style.color = 'var(--text-muted)';
+        summaryEl.textContent = `Status: ${rec.status} · Expected: ₹${expected.toLocaleString('en-IN')}`;
+      }
+      
+      overlay.classList.add('open');
+    }
+    
+    function closeReceiptModal() {
+      document.getElementById('receiptModalOverlay').classList.remove('open');
+    }
+
+    // Live calculation of remaining balance
+    document.getElementById('payAmount').addEventListener('input', () => {
+      if (!selectedRecord) return;
+      const expected = selectedRecord.base_fee + selectedRecord.admission_fee + selectedRecord.fine_amount;
+      const paid = selectedRecord.amount_paid || 0;
+      const outstanding = expected - paid;
+      
+      const paying = Number(document.getElementById('payAmount').value) || 0;
+      const remaining = Math.max(0, outstanding - paying);
+      
+      document.getElementById('payModalRemaining').textContent = `₹${remaining.toLocaleString('en-IN')}`;
+    });
+
+    // Warning Confirmation Modal helper
+    function showWarningModal(expected, paid, onConfirm, onCancel) {
+      const warningOverlay = document.createElement('div');
+      warningOverlay.className = 'modal-overlay';
+      warningOverlay.style.zIndex = '1000';
+      const diff = expected - paid;
+      warningOverlay.innerHTML = `
+        <div class="modal-card" style="max-width:400px; padding: 24px; text-align: center;">
+          <h3 style="color:var(--orange); margin: 0 0 12px; font-size:16px;">Warning: Partial Payment</h3>
+          <p style="font-size:13px; line-height:1.6; color:var(--text); margin-bottom:20px;">
+            The paid amount (<b>₹${paid}</b>) is less than outstanding balance (<b>₹${expected}</b>).<br>
+            Do you want to write the remaining balance of <b>₹${diff}</b> to the student's dues?
+          </p>
+          <div style="display:flex; justify-content:center; gap:12px;">
+            <button class="btn btn-secondary" id="warnCancelBtn">Cancel</button>
+            <button class="btn btn-primary" id="warnConfirmBtn">Yes, write to dues</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(warningOverlay);
+      document.getElementById('warnCancelBtn').onclick = () => {
+        warningOverlay.remove();
+        onCancel();
+      };
+      document.getElementById('warnConfirmBtn').onclick = () => {
+        warningOverlay.remove();
+        onConfirm();
+      };
+    }
+
+    // Submit Payment
+    document.getElementById('paySubmitBtn').addEventListener('click', async () => {
+      if (!selectedRecord) return;
+      const errEl = document.getElementById('payModalError');
+      errEl.style.display = 'none';
+
+      const amountPaid = Number(document.getElementById('payAmount').value);
+      const paymentMode = document.getElementById('payMode').value;
+      const billNumber = document.getElementById('payBillNo').value.trim();
+
+      if (isNaN(amountPaid) || amountPaid <= 0) {
+        errEl.textContent = 'Please enter a valid positive paying amount.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      if (!/^\d{4,5}$/.test(billNumber)) {
+        errEl.textContent = 'Bill number must be a 4 or 5 digit number.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      const expected = selectedRecord.base_fee + selectedRecord.admission_fee + selectedRecord.fine_amount;
+      const alreadyPaid = selectedRecord.amount_paid || 0;
+      const outstanding = expected - alreadyPaid;
+
+      const proceedSave = async () => {
+        try {
+          await api(`/payments/${selectedRecord.billing_id}/pay`, {
+            method: 'POST',
+            body: JSON.stringify({
+              amount_paid: amountPaid,
+              bill_number: billNumber,
+              payment_mode: paymentMode
+            })
+          });
+          closePayModal();
+          showToast('Payment recorded successfully.');
+          loadMetrics();
+          loadPayments();
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.style.display = 'block';
+        }
+      };
+
+      if (amountPaid < outstanding) {
+        showWarningModal(outstanding, amountPaid, proceedSave, () => {});
+      } else {
+        proceedSave();
+      }
+    });
+
+    // Dismiss Event Listeners
+    document.getElementById('payCancelBtn').addEventListener('click', closePayModal);
+    document.getElementById('payModalOverlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closePayModal();
+    });
+    
+    document.getElementById('receiptCloseBtn').addEventListener('click', closeReceiptModal);
+    document.getElementById('receiptModalOverlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeReceiptModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closePayModal();
+        closeReceiptModal();
+      }
+    });
+
+    // Filtering & Searching Event Listeners
+    document.getElementById('monthFilter').addEventListener('change', () => {
+      loadMetrics();
+      loadPayments();
+    });
+    document.getElementById('statusFilter').addEventListener('change', loadPayments);
+    document.getElementById('searchInput').addEventListener('input', renderPaymentRows);
+
+    // Initial Load
+    loadMetrics();
+    loadPayments().then(() => {
+      // Auto-open receipt if ?receipt=BILLING_ID is in the URL (popup from students.html)
+      const urlParams = new URLSearchParams(window.location.search);
+      const receiptId = urlParams.get('receipt');
+      if (receiptId) {
+        openReceiptModal(parseInt(receiptId));
+      }
+    });
+
+    window.onLiveUpdate = (data) => {
+      if (data.type === 'payments' || data.type === 'students') {
+        loadMetrics();
+        loadPayments();
+      }
+    };
+  </script>
+</body>
+</html>
