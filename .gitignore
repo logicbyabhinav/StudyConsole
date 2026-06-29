@@ -3,3 +3,7 @@ data/
 *.db
 .env
 data/auto-backups/
+scratch_check.js
+node
+hello.md
+auth_portal_implementation_plan.md
