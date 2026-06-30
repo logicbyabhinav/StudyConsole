@@ -377,56 +377,251 @@ This keeps the product entirely free to run — no per-message cost, no API key,
 
 ---
 
-## Database Schema (Core Tables)
+## Database Schema (Full)
 
-### `students`
+StudyConsole uses **two separate SQLite database files**: `studycenter.db` holds all operational data, and `photos.db` holds only student photographs. They are kept apart so the constantly-queried operational tables stay fast and small, while large photo blobs live in their own file — both are bundled together in every backup.
+
+### `studycenter.db`
+
+#### `students`
+The core record for every admitted student.
 
 | Field | Type | Notes |
 |---|---|---|
 | `student_id` | INTEGER PK | |
-| `name`, `gender`, `dob`, `phone`, `whatsapp`, `email` | TEXT | |
-| `duration_hours` | INTEGER | Sum of hours across all active allocations (supports combo blocks) |
-| `fee_structure_id` | INTEGER FK | |
-| `status` | TEXT | `Active` \| `Suspended` \| `Archived` |
-| `billing_start_month` | TEXT | `YYYY-MM`, anchors their personal billing cycle |
-| `photo_path` | TEXT | Reference into `photos.db`, not the photo data itself |
+| `name`, `gender`, `dob` | TEXT | `gender` constrained to `Male` \| `Female` \| `Other` |
+| `phone`, `whatsapp`, `email`, `aadhaar_number` | TEXT | |
+| `father_name`, `mother_name`, `emergency_contact`, `address` | TEXT | |
+| `joining_date`, `leaving_date` | TEXT | |
+| `duration_hours` | INTEGER | Sum of hours across all active allocations — supports combo (multi-shift) students |
+| `fee_structure_id` | INTEGER FK → `fee_structures` | |
+| `status` | TEXT | `Active` \| `Suspended` \| `Archived` (`Overdue` is a billing-level status only, never a student-level one) |
+| `billing_start_month` | TEXT | `YYYY-MM` — anchors this student's personal billing cycle |
+| `form_number`, `class`, `parent_occupation`, `nationality`, `religion`, `goal` | TEXT | Admission-form fields |
+| `photo_path` | TEXT | Reference key into `photos.db`, not the image data itself |
+| `address_village`, `address_po`, `address_ps`, `address_district`, `address_state`, `address_pin` | TEXT | Full postal breakdown, common in rural Indian addressing |
+| `education_history` | TEXT | |
+| `remarks`, `created_at`, `updated_at` | TEXT | |
 
-### `seat_allocations`
+#### `seats`
+The physical seat inventory and its visual layout.
+
+| Field | Type | Notes |
+|---|---|---|
+| `seat_id` | INTEGER PK | |
+| `seat_number` | TEXT UNIQUE | Display label, e.g. `1`, `2`, `3` |
+| `section` | TEXT | e.g. `A`, `B`, `C` — used by the allocator for gender balancing |
+| `active` | INTEGER | `1` = usable, `0` = disabled (e.g. broken chair) |
+| `grid_x`, `grid_y`, `rotation`, `frame_id` | INTEGER/TEXT | Coordinates for the drag-and-drop seat layout editor |
+| `created_at` | TEXT | |
+
+#### `seat_allocations`
+The most important table in the system — every row is a single time-block assignment. Nothing is ever deleted, preserving full seat history.
 
 | Field | Type | Notes |
 |---|---|---|
 | `allocation_id` | INTEGER PK | |
-| `student_id`, `seat_id` | INTEGER FK | |
-| `start_time`, `end_time` | TEXT | `HH:MM`, may wrap past midnight |
-| `active` | INTEGER | Nothing is ever deleted — old rows are marked `active = 0` |
+| `student_id` | INTEGER FK → `students` | |
+| `seat_id` | INTEGER FK → `seats` | |
+| `start_time`, `end_time` | TEXT | `HH:MM` 24-hour; may wrap past midnight (e.g. `22:00` → `04:00`) |
+| `valid_from`, `valid_to` | TEXT | |
+| `active` | INTEGER | A "combo" student simply has 2+ active rows here at once. Reallocating sets the old row's `active = 0` instead of deleting it |
+| `created_at` | TEXT | |
 
-### `billing_records`
+#### `fee_structures`
+Defines what a given number of daily study hours costs per month.
+
+| Field | Type | Notes |
+|---|---|---|
+| `fee_structure_id` | INTEGER PK | |
+| `hours_per_day` | INTEGER UNIQUE | |
+| `monthly_fee` | REAL | |
+| `active` | INTEGER | Inactive structures stay visible for historical billing records but can't be assigned to new students |
+| `created_at` | TEXT | |
+
+#### `billing_records`
+One row per student per billing month.
 
 | Field | Type | Notes |
 |---|---|---|
 | `billing_id` | INTEGER PK | |
+| `student_id` | INTEGER FK → `students` | |
 | `billing_month` | TEXT | `YYYY-MM` |
-| `base_fee`, `admission_fee`, `fine_amount`, `amount_paid`, `due_amount` | REAL | |
+| `base_fee`, `admission_fee`, `fine_amount` | REAL | |
+| `amount_paid`, `due_amount` | REAL | |
+| `bill_number` | TEXT | |
+| `payment_mode` | TEXT | `Cash` \| `UPI` \| `Other` |
+| `payment_date` | TEXT | |
 | `status` | TEXT | `Due` \| `Paid` \| `Overdue` \| `Partial` |
+| `reminder_sent` | INTEGER | `0` = not sent, `1` = sent |
+| `created_at` | TEXT | |
 
-### `audit_settings` (single row, `setting_id = 1`)
+#### `payment_transactions`
+An append-only ledger of every individual payment, even partial ones, against a `billing_records` row.
 
 | Field | Type | Notes |
 |---|---|---|
-| `audit_day` | INTEGER | Clamped to ≤28 by both frontend and backend to avoid February overflow |
-| `fine_amount`, `partial_fine_amount` | REAL | |
-| `suspension_threshold_months` | INTEGER | |
+| `transaction_id` | INTEGER PK | |
+| `payment_id` | TEXT UNIQUE | |
+| `billing_id` | INTEGER FK → `billing_records` | |
+| `amount_paid` | REAL | |
+| `bill_number`, `payment_mode`, `payment_date` | TEXT | |
+| `created_at` | TEXT | |
 
-### `sessions`
+#### `audit_settings`
+Single-row table (`setting_id = 1` always) controlling the fine and suspension engine.
+
+| Field | Type | Notes |
+|---|---|---|
+| `audit_day` | INTEGER | Clamped to ≤28 by both frontend and backend — prevents day 29/30/31 silently overflowing into the next month in February |
+| `fine_amount` | REAL | Fine applied to a `Due` record past the audit day |
+| `admission_fee` | REAL | Default admission fee for new students |
+| `partial_fine_amount` | REAL | Fine applied to a `Partial` record past its exemption period. Guarded against `0` to prevent an infinite re-fine loop on every restart |
+| `partial_exemption_months` | INTEGER | Grace period before a `Partial` record becomes fineable |
+| `suspension_threshold_months` | INTEGER | Months overdue before a student is auto-suspended |
+| `updated_at` | TEXT | |
+
+#### `app_settings`
+Single-row table (`setting_id = 1` always) for institute-level configuration.
+
+| Field | Type | Notes |
+|---|---|---|
+| `institute_name`, `institute_address`, `institute_phone` | TEXT | Shown on the public registration form and receipts |
+| `total_seats`, `section_size` | INTEGER | |
+| `operational_start_month` | TEXT | `YYYY-MM` — when billing logic goes live, used during transition from a manual to digital system |
+| `created_at` | TEXT | |
+
+#### `registration_requests`
+Public admission intake — anyone can submit one without logging in.
+
+| Field | Type | Notes |
+|---|---|---|
+| `request_id` | INTEGER PK | |
+| `name`, `gender`, `dob`, `phone`, `whatsapp`, `email`, `aadhaar_number` | TEXT | |
+| `father_name`, `mother_name`, `emergency_contact`, `address` | TEXT | |
+| `joining_date` | TEXT | |
+| `preferred_seat`, `preferred_start_time`, `preferred_end_time` | TEXT | Student's stated preference — not binding, admin runs the allocator separately |
+| `status` | TEXT | `Pending` \| (admitted → row is consumed and a real `students` row created) |
+| `form_number`, `class`, `parent_occupation`, `nationality`, `religion`, `goal`, `photo_path` | TEXT | Mirrors the admission form fields on `students` |
+| `address_village`, `address_po`, `address_ps`, `address_district`, `address_state`, `address_pin`, `education_history` | TEXT | |
+| `remarks`, `created_at`, `updated_at` | TEXT | |
+
+#### `email_settings`
+Single-row table (`setting_id = 1` always) for optional SMTP configuration.
+
+| Field | Type | Notes |
+|---|---|---|
+| `smtp_host` | TEXT | Defaults to `smtp.gmail.com` |
+| `smtp_port` | INTEGER | Defaults to `465` |
+| `smtp_secure` | INTEGER | `1` = TLS |
+| `sender_email`, `sender_password` | TEXT | App-password, not the account password |
+| `active` | INTEGER | Email sending is entirely opt-in; off by default |
+
+#### `seat_override_logs`
+Permanent audit trail every time an admin manually overrides the allocator's seat proposal.
+
+| Field | Type | Notes |
+|---|---|---|
+| `override_id` | INTEGER PK | |
+| `student_id` | INTEGER FK → `students` (cascade delete) | |
+| `proposed_seat`, `allocated_seat` | TEXT | What the algorithm suggested vs. what the admin actually chose |
+| `reason` | TEXT | Required free-text justification |
+| `admin_name`, `timestamp` | TEXT | |
+
+#### `whatsapp_queue`
+Holds outgoing reminder messages for the admin to send manually via WhatsApp Web — no paid API integration.
+
+| Field | Type | Notes |
+|---|---|---|
+| `queue_id` | INTEGER PK | |
+| `student_id` | INTEGER FK → `students` (cascade delete) | |
+| `phone` | TEXT | |
+| `message_type` | TEXT | e.g. overdue reminder, welcome message |
+| `message_text` | TEXT | Pre-filled, ready to copy/send |
+| `status` | TEXT | `Pending` \| `Sent` |
+| `reference_id` | INTEGER | Links back to the triggering record (e.g. a `billing_id`) |
+| `created_at`, `updated_at` | TEXT | |
+
+#### `reallocation_requests`
+Student-submitted seat or time-slot change requests, awaiting admin review.
+
+| Field | Type | Notes |
+|---|---|---|
+| `request_id` | INTEGER PK | |
+| `student_id` | INTEGER FK → `students` (cascade delete) | |
+| `preferred_seat`, `preferred_start_time`, `preferred_end_time` | TEXT | |
+| `reason` | TEXT | |
+| `status` | TEXT | `Pending` \| `Approved` \| `Rejected` |
+| `created_at`, `updated_at` | TEXT | |
+
+#### `admins`
+Admin login credentials. Typically a single row per installation.
+
+| Field | Type | Notes |
+|---|---|---|
+| `admin_id` | INTEGER PK | |
+| `username` | TEXT UNIQUE | |
+| `password_hash` | TEXT | bcrypt |
+| `created_at` | TEXT | |
+
+#### `student_auth`
+Login credentials for the student portal, separate from the `students` profile table.
+
+| Field | Type | Notes |
+|---|---|---|
+| `student_id` | INTEGER PK, FK → `students` (cascade delete) | |
+| `password_hash` | TEXT | bcrypt |
+| `last_login` | TEXT | |
+| `password_changed_at` | TEXT | `NULL` if still on the temporary password issued at admission |
+| `created_at` | TEXT | |
+
+#### `sessions`
+Active login sessions for both admin and student users. Fully wiped on every server restart.
 
 | Field | Type | Notes |
 |---|---|---|
 | `session_id` | TEXT PK | |
 | `user_type` | TEXT | `admin` \| `student` |
-| `user_id` | INTEGER | `student_id`, or the admin's `admin_id` |
-| `expires_at` | TEXT | |
+| `user_id` | INTEGER | `student_id` for students; the admin's `admin_id` for admin sessions |
+| `expires_at`, `created_at` | TEXT | |
 
-> Full schema (`registration_requests`, `whatsapp_queue`, `reallocation_requests`, `profile_edit_requests`, `attendance_log`, `seat_override_logs`, `student_auth`, `admins`) is in `server/db/schema.sql` and `server/db/init.js`.
+#### `profile_edit_requests`
+Students cannot edit their own profile directly — every change goes through this approval queue, mirroring nearly every editable field on `students`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `request_id` | INTEGER PK | |
+| `student_id` | INTEGER FK → `students` (cascade delete) | |
+| `name`, `gender`, `dob`, `phone`, `whatsapp`, `email`, `aadhaar_number` | TEXT | Proposed new values |
+| `father_name`, `mother_name`, `emergency_contact`, `address` | TEXT | |
+| `form_number`, `class`, `parent_occupation`, `nationality`, `religion`, `goal` | TEXT | |
+| `address_village`, `address_po`, `address_ps`, `address_district`, `address_state`, `address_pin`, `education_history` | TEXT | |
+| `photo_data` | TEXT | Proposed new photo, base64, pending approval before being written to `photos.db` |
+| `status` | TEXT | `Pending` \| `Approved` \| `Rejected` |
+| `created_at` | TEXT | |
+
+#### `attendance_log`
+One row per student per day — automatically inserted the moment a student logs into the portal.
+
+| Field | Type | Notes |
+|---|---|---|
+| `date` | TEXT | Composite PK with `student_id` |
+| `student_id` | INTEGER | Composite PK with `date` |
+| `logged_in_at` | TEXT | First login timestamp of the day; `INSERT OR IGNORE` makes this idempotent — a student logging in multiple times in one day only creates one row |
+
+**Indexes** — `studycenter.db` maintains indexes on `payment_transactions(billing_id)`, `seat_allocations(seat_id, active)`, `seat_allocations(student_id, active)`, `billing_records(student_id, billing_month)`, `reallocation_requests(status)`, and `attendance_log(date)` to keep the most frequent dashboard and billing queries fast even as records accumulate over years.
+
+---
+
+### `photos.db`
+
+#### `student_photos`
+Deliberately the only table in this second database file — keeps large image blobs fully isolated from the operational tables that are queried constantly.
+
+| Field | Type | Notes |
+|---|---|---|
+| `student_id` | INTEGER PK | Matches the `student_id` in `studycenter.db`, but is **not** a SQL foreign key since it lives in a different database file |
+| `photo_data` | TEXT NOT NULL | Base64-encoded image data |
 
 ---
 
